@@ -499,13 +499,21 @@ function save() {
   writeTimer = setTimeout(writeProgressFile, 600);
 }
 // lê o arquivo antes de gravar e junta os eventos: PC, celular e tablet nunca apagam o que o outro registrou
+let syncState = { ok: null, at: null, err: '' };
 async function writeProgressFile() {
   try {
     const remote = await readRemote();
     if (remote) { const n = DATA.events.length; DATA = mergeData(DATA, remote); if (DATA.events.length !== n) render(); }
     DATA.savedAt = Date.now(); saveLocal();
+    if (!IS_WEB && (await dirHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') throw new Error('sem permissão de gravação na pasta');
     await writeRemote(JSON.stringify(DATA, null, 1));
-  } catch (e) { console.warn('Falha ao gravar o progresso', e); }
+    syncState = { ok: true, at: new Date(), err: '' };
+  } catch (e) {
+    console.warn('Falha ao gravar o progresso', e);
+    syncState = { ok: false, at: new Date(), err: `${e.name || ''} ${e.message || e}`.trim() };
+    toast('⚠️ Não consegui salvar no OneDrive: ' + syncState.err, true);
+  }
+  renderStats();
 }
 async function pullRemote() {
   if (SIM || !connected()) return;
@@ -657,6 +665,9 @@ function renderStats() {
     <span class="chip ${S.storm >= 2 ? 'bad' : ''}">${STORM_NAMES[S.storm]}</span>
     <span class="chip" title="Estudos e revisões por origem">💻 ${S.srcCount.pc || 0} · 📖 ${S.srcCount.kindle || 0}</span>
     ${SIM ? `<span class="chip sim">🧪 data simulada ${D.br(SIM)}</span>` : ''}
+    ${!connected() ? '<span class="chip bad" title="Este aparelho não está salvando no OneDrive">☁️ sem sincronizar</span>'
+      : syncState.ok === false ? `<span class="chip bad" title="${esc(syncState.err)}">⚠️ erro ao salvar</span>`
+      : syncState.ok ? `<span class="chip" title="Progresso gravado em ${PROGRESS_FILE}">☁️ salvo ${syncState.at.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>` : ''}
     ${!dirHandle && window.showDirectoryPicker ? '' : ''}`;
 }
 function renderToday() {
