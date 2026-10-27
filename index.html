@@ -9,21 +9,48 @@
 <title>Tabuleiro de Estudos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script>try { const p = localStorage.getItem('tabuleiro10:tema') || 'auto'; document.documentElement.dataset.theme = p === 'dark' || (p === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; } catch (e) { /* sem storage */ }</script>
 <style>
 :root{
   --ink:#1d2433; --ink-soft:#4b5568; --paper:#fffaf0; --card:#ffffff; --line:#e6dcc8;
   --gold:#f6b60c; --gold-deep:#c98a00; --danger:#d7263d; --danger-deep:#7a0f1c; --ok:#1fa463;
   --path:#f3e3bf; --path-edge:#d9c39a; --progress:#ffcf3f;
-  --sky-a:#8fd3ff; --sky-b:#e8f7ff; --ground:#9ad37a;
+  --sky-a:#8fd3ff; --sky-b:#e8f7ff; --ground:#9ad37a; --ground-end:#f6fbe9;
+  --hud:rgba(255,250,240,.9); --chip:#fff; --btn:#fff; --panel:rgba(255,255,255,.75); --field:#fff;
+  --node:#fff; --node-done:#fff3c4; --halo:rgba(255,255,255,.85); --bad-bg:#ffe3e6; --bad-line:#f3a3ad; --bad-ink:#7a0f1c;
   --radius:16px;
   --font-title:"Fredoka", "Segoe UI", system-ui, sans-serif;
   --font-body:"Nunito", "Segoe UI", system-ui, sans-serif;
+  color-scheme:light;
 }
+/* modo noturno: mesmas variáveis, tons de noite */
+html[data-theme="dark"]{
+  --ink:#e8ecf4; --ink-soft:#a9b3c4; --paper:#1a2030; --card:#232a3b; --line:#343d52;
+  --path:#4a4536; --path-edge:#2c281e; --progress:#e0b43a;
+  --sky-a:#050a18; --sky-b:#142038; --ground-end:#111827;
+  --hud:rgba(14,18,28,.92); --chip:#222a3b; --btn:#2a3347; --panel:rgba(22,28,42,.85); --field:#222a3b;
+  --node:#222a3b; --node-done:#4a3d12; --halo:rgba(8,12,20,.9); --bad-bg:#4a1520; --bad-line:#7a2a35; --bad-ink:#ffc2c9;
+  color-scheme:dark;
+}
+html[data-theme="dark"] body.storm-1{--sky-a:#0c121e;--sky-b:#232a36}
+html[data-theme="dark"] body.storm-2{--sky-a:#080b12;--sky-b:#1b2029;--path:#3e3a2f;--path-edge:#24211a}
+html[data-theme="dark"] body.storm-3{--sky-a:#020306;--sky-b:#10131a;--path:#36322a;--path-edge:#1d1a15}
+html[data-theme="dark"] body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.7;transition:opacity 1.2s;
+  background-image:radial-gradient(1.4px 1.4px at 12% 18%,#fff,transparent),radial-gradient(1.2px 1.2px at 32% 8%,#fff,transparent),
+  radial-gradient(1.6px 1.6px at 55% 22%,#fff,transparent),radial-gradient(1.1px 1.1px at 72% 12%,#fff,transparent),
+  radial-gradient(1.4px 1.4px at 88% 28%,#fff,transparent),radial-gradient(1.2px 1.2px at 22% 40%,#fff,transparent),
+  radial-gradient(1.2px 1.2px at 64% 44%,#fff,transparent),radial-gradient(1.5px 1.5px at 92% 52%,#fff,transparent)}
+html[data-theme="dark"] body.storm-2::before, html[data-theme="dark"] body.storm-3::before{opacity:0}
+html[data-theme="dark"] .scene{color:#8fa3c8;opacity:.08}
+html[data-theme="dark"] .journal .it.loss{color:#ff8a98}
+html[data-theme="dark"] #reader{background:#111}
+html[data-theme="dark"] #reader iframe{filter:invert(.9) hue-rotate(180deg)}
+html[data-theme="dark"] .tile .base{stroke:rgba(255,255,255,.12)}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
 body{
   font-family:var(--font-body); color:var(--ink);
-  background:linear-gradient(180deg,var(--sky-a) 0%,var(--sky-b) 55%,#f6fbe9 100%);
+  background:linear-gradient(180deg,var(--sky-a) 0%,var(--sky-b) 55%,var(--ground-end) 100%);
   background-attachment:fixed; transition:background 1.2s ease;
   overflow-x:hidden;
 }
@@ -49,29 +76,29 @@ body.storm-3 .clouds span{background:radial-gradient(circle at 30% 40%,#4a5361,#
 
 /* HUD */
 .hud{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;
-  padding:10px 16px;background:rgba(255,250,240,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);transition:background 1s}
+  padding:10px 16px;background:var(--hud);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);transition:background 1s}
 .brand{font-family:var(--font-title);font-weight:700;font-size:1.25rem;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .brand small{font-family:var(--font-body);font-weight:600;font-size:.75rem;opacity:.65}
 .stats{display:flex;flex-wrap:wrap;gap:8px;flex:1}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--line);
   font-weight:700;font-size:.9rem;white-space:nowrap}
 .chip small{font-weight:600;opacity:.65}
-.chip.bad{background:#ffe3e6;border-color:#f3a3ad;color:var(--danger-deep)}
+.chip.bad{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad-ink)}
 .chip.lvl .bar{width:64px;height:8px;border-radius:9px;background:rgba(0,0,0,.12);overflow:hidden}
 .chip.lvl .bar i{display:block;height:100%;background:linear-gradient(90deg,#6dd5ff,#7c5cff)}
 .actions{display:flex;gap:8px}
 button{font-family:var(--font-title);font-weight:600;font-size:.95rem;border:0;border-radius:12px;padding:9px 14px;cursor:pointer;
-  background:#fff;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.18);transition:transform .08s, filter .15s}
+  background:var(--btn);color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.18);transition:transform .08s, filter .15s}
 button:hover{filter:brightness(1.05)} button:active{transform:translateY(2px);box-shadow:none}
 button:disabled{opacity:.45;cursor:not-allowed}
 button.primary{background:linear-gradient(180deg,#ffd54a,#f6a90c);color:#3b2600}
 button.go{background:linear-gradient(180deg,#43d17f,#1fa463);color:#fff}
 button.kindle{background:linear-gradient(180deg,#5a6b7d,#36424f);color:#fff}
 button.danger{background:linear-gradient(180deg,#ff5c6f,#c41d33);color:#fff}
-button.ghost{background:transparent;box-shadow:none;border:1px solid var(--line)}
+button.ghost{background:transparent;color:var(--ink);box-shadow:none;border:1px solid var(--line)}
 .sim{background:#7c5cff;color:#fff;border-color:#7c5cff}
 
-.today{margin:12px 16px 0;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.75);border:1px solid var(--line);
+.today{margin:12px 16px 0;padding:10px 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line);
   font-weight:700;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
 .today .late{color:var(--danger)}
 #warn{margin:10px 16px 0;display:flex;flex-direction:column;gap:8px}
@@ -84,7 +111,7 @@ button.ghost{background:transparent;box-shadow:none;border:1px solid var(--line)
 main{position:relative;z-index:2;display:grid;grid-template-columns:1fr;gap:12px;padding:12px 16px 120px}
 .board-wrap{width:100%}
 #board{width:100%;height:auto;display:block;overflow:visible}
-.legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.75);border:1px solid var(--line);font-size:.88rem}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.75);border:1px solid var(--line);font-size:.88rem;background:var(--panel)}
 .legend span{display:inline-flex;align-items:center;gap:6px;font-weight:700}
 .legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
 .legend em{font-style:normal;font-weight:600;opacity:.7}
@@ -107,7 +134,7 @@ main{position:relative;z-index:2;display:grid;grid-template-columns:1fr;gap:12px
 .gem{stroke:#fff;stroke-width:1.5}
 .chest{cursor:pointer}
 .chest text{text-anchor:middle;font-family:var(--font-title);pointer-events:none}
-.lb{paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:4px;stroke-linejoin:round}
+.lb{paint-order:stroke;stroke:var(--halo);stroke-width:4px;stroke-linejoin:round}
 .today a{color:inherit;text-decoration:none;border-bottom:2px dotted currentColor}
 .chest.done .glow{animation:chestglow 2.4s ease-in-out infinite}
 @keyframes chestglow{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -143,12 +170,12 @@ main{position:relative;z-index:2;display:grid;grid-template-columns:1fr;gap:12px
 .card p{margin:8px 0;line-height:1.5}
 .row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .hist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
-.hist li{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.9rem}
+.hist li{background:var(--field);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.9rem}
 .hist li .n{display:block;margin-top:4px;font-style:italic;color:var(--ink-soft);white-space:pre-wrap}
 .note{font-size:.85rem;color:var(--ink-soft)}
 .timer{font-family:var(--font-title);font-size:2.4rem;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
 .timer.over{color:var(--ok)} #pill .t.over{color:#6ef0a5}
-textarea,input[type=number],select{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#fff}
+textarea,input[type=number],select{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--field);color:var(--ink)}
 textarea{min-height:120px;resize:vertical}
 label{font-weight:700;font-size:.9rem;display:block;margin:10px 0 4px}
 .counter{font-size:.8rem;font-weight:700;text-align:right}
@@ -167,12 +194,40 @@ label{font-weight:700;font-size:.9rem;display:block;margin:10px 0 4px}
 @keyframes toast{0%{opacity:0;transform:translate(-50%,10px)}12%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-20px)}}
 .welcome{max-width:640px;margin:40px auto;padding:0 16px;position:relative;z-index:3}
 .welcome .card{animation:none}
-@media (max-width:640px){
-  .brand small{display:none}
-  .chip{font-size:.8rem;padding:5px 8px}
-  .chip.lvl .bar{width:40px}
-  .timer{font-size:2rem}
+/* tablets e telas estreitas: chips numa faixa que rola de lado, sem empurrar o tabuleiro para baixo */
+@media (max-width:900px){
+  .hud{gap:8px 10px;padding:8px 12px}
+  .brand{flex:1;min-width:0}
+  .stats{order:3;flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    -webkit-mask-image:linear-gradient(90deg,#000 90%,transparent);mask-image:linear-gradient(90deg,#000 90%,transparent);padding-right:24px}
+  .stats::-webkit-scrollbar{display:none}
 }
+@media (max-width:640px){
+  .brand{font-size:1.05rem;gap:6px}
+  .brand small{display:none}
+  .actions{gap:6px}
+  .actions button{padding:8px 11px}
+  #btnSync .lbl{display:none}
+  .chip{font-size:.8rem;padding:5px 9px}
+  .chip.lvl .bar{width:40px}
+  .today{margin:8px 10px 0;padding:8px 10px;font-size:.88rem;gap:4px 10px}
+  #warn{margin:8px 10px 0;gap:6px}
+  .warn{font-size:.84rem;padding:8px 10px}
+  main{padding:8px 6px 110px}
+  .legend{font-size:.8rem;gap:6px 10px}
+  .modal{padding:0;align-items:flex-end}
+  .card{border-radius:18px 18px 0 0;max-height:92dvh}
+  .card .head{border-radius:18px 18px 0 0;padding:14px 16px}
+  .card .head h2{font-size:1.15rem;padding-right:40px}
+  .card .body{padding:12px 14px 18px}
+  .row button{flex:1 1 auto}
+  .timer{font-size:2rem}
+  .big{font-size:2.6rem}
+  .toast{font-size:1.05rem;top:64px;max-width:calc(100vw - 24px);text-align:center}
+  #pill{bottom:10px;gap:8px;padding:8px 8px 8px 14px}
+  .rbar{padding:6px 8px;font-size:.9rem}
+}
+@media (max-width:360px){ .brand .name{display:none} }
 </style>
 </head>
 <body class="storm-0">
@@ -201,10 +256,11 @@ label{font-weight:700;font-size:.9rem;display:block;margin:10px 0 4px}
 <canvas id="rain"></canvas><div id="flash"></div>
 
 <header class="hud">
-  <div class="brand">⚖️ Tabuleiro de Estudos <small>Carreira jurídica · 10º período</small></div>
+  <div class="brand"><span>⚖️</span><span class="name">Tabuleiro de Estudos</span> <small>Carreira jurídica · 10º período</small></div>
   <div class="stats" id="stats"></div>
   <div class="actions">
-    <button id="btnSync" title="Varre de novo as pastas das disciplinas">⟳ Atualizar fontes</button>
+    <button id="btnSync" title="Varre de novo as pastas das disciplinas"><span>⟳</span><span class="lbl"> Atualizar fontes</span></button>
+    <button id="btnTheme" title="Tema">🌗</button>
     <button id="btnMenu" title="Menu">☰</button>
   </div>
 </header>
@@ -599,9 +655,9 @@ async function connectFolder() {
 // aviso de andamento no botão ⟳ enquanto a varredura roda (no OneDrive leva alguns segundos)
 function scanProgress(n) {
   const b = $('btnSync');
-  if (n === false) { b.disabled = false; b.textContent = '⟳ Atualizar fontes'; return; }
+  if (n === false) { b.disabled = false; b.innerHTML = '<span>⟳</span><span class="lbl"> Atualizar fontes</span>'; return; }
   b.disabled = true;
-  b.textContent = IS_WEB ? `⏳ Lendo o OneDrive…${n ? ` ${n} aula(s)` : ''}` : '⏳ Lendo a pasta…';
+  b.innerHTML = `<span>⏳</span><span class="lbl"> ${IS_WEB ? 'Lendo o OneDrive…' : 'Lendo a pasta…'}</span>${n ? ` <b>${n}</b>` : ''}`;
 }
 let syncing = null;
 function syncFromRemote(showReport) {
@@ -747,8 +803,8 @@ function renderBoard() {
   <path d="${pathD(nodes.length)}" fill="none" stroke="var(--path)" stroke-width="${s * 0.34}" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="${pathD(pawnNode)}" fill="none" stroke="var(--progress)" stroke-width="${s * 0.12}" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 ${s * 0.2}" opacity=".9"/>`;
   for (const n of nodes) {
-    if (n.type === 'start') out += `<g transform="translate(${n.x},${n.y})"><circle r="${s * 0.42}" fill="#fff" stroke="var(--path-edge)" stroke-width="4"/><text text-anchor="middle" y="${s * 0.12}" font-size="${s * 0.38}">🏛️</text><text class="lb" text-anchor="middle" y="${s * 0.62}" font-family="Fredoka,sans-serif" font-weight="700" font-size="13" fill="var(--ink)">Fórum</text></g>`;
-    else if (n.type === 'end') out += `<g class="chest" transform="translate(${n.x},${n.y})"><circle r="${s * 0.42}" fill="#fff" stroke="var(--gold)" stroke-width="4"/><text y="${s * 0.12}" font-size="${s * 0.38}">🎓</text><text class="lb" y="${s * 0.62}" font-weight="700" font-size="13" fill="var(--ink)">Colação de grau</text></g>`;
+    if (n.type === 'start') out += `<g transform="translate(${n.x},${n.y})"><circle r="${s * 0.42}" fill="var(--node)" stroke="var(--path-edge)" stroke-width="4"/><text text-anchor="middle" y="${s * 0.12}" font-size="${s * 0.38}">🏛️</text><text class="lb" text-anchor="middle" y="${s * 0.62}" font-family="Fredoka,sans-serif" font-weight="700" font-size="13" fill="var(--ink)">Fórum</text></g>`;
+    else if (n.type === 'end') out += `<g class="chest" transform="translate(${n.x},${n.y})"><circle r="${s * 0.42}" fill="var(--node)" stroke="var(--gold)" stroke-width="4"/><text y="${s * 0.12}" font-size="${s * 0.38}">🎓</text><text class="lb" y="${s * 0.62}" font-weight="700" font-size="13" fill="var(--ink)">Colação de grau</text></g>`;
     else if (n.type === 'chest') out += chestSVG(n, s);
     else out += tileSVG(n.t, n.x, n.y, s, n.i === S.pawn);
   }
@@ -810,7 +866,7 @@ function chestSVG(n, s) {
   const icon = w ? (w.perfect ? '🏛️' : '🔨') : (done ? '📜' : '⚖️');
   return `<g class="chest ${w ? 'done' : ''}" data-week="${n.week}" transform="translate(${n.x},${n.y})">
     ${w ? `<circle class="glow" r="${r * 1.7}" fill="url(#chestGlow)"/>` : ''}
-    <circle r="${r}" fill="${w ? '#fff3c4' : '#fff'}" stroke="${w ? 'var(--gold)' : 'var(--path-edge)'}" stroke-width="${w ? 5 : 3}"/>
+    <circle r="${r}" fill="${w ? 'var(--node-done)' : 'var(--node)'}" stroke="${w ? 'var(--gold)' : 'var(--path-edge)'}" stroke-width="${w ? 5 : 3}"/>
     <text y="${s * 0.12}" font-size="${s * 0.36}">${icon}</text>
     ${w ? `<text x="${r * 0.72}" y="${-r * 0.5}" font-size="${s * 0.2}">✅</text>` : ''}
     <text class="lb" y="${r + 16}" font-size="12.5" font-weight="700" fill="var(--ink)">Semana ${n.n}</text>
@@ -1149,6 +1205,25 @@ document.addEventListener('click', e => {
 });
 $('btnSync').onclick = refreshSources;
 $('btnMenu').onclick = menuModal;
+
+// ---------- tema (preferência deste aparelho) ----------
+const THEME_KEY = 'tabuleiro10:tema', themeMQ = matchMedia('(prefers-color-scheme: dark)');
+const THEME_NAMES = { auto: '🌗 Tema automático (segue o aparelho)', dark: '🌙 Modo noturno', light: '☀️ Modo claro' };
+const themePref = () => { try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch (e) { return 'auto'; } };
+function applyTheme() {
+  const pref = themePref(), dark = pref === 'dark' || (pref === 'auto' && themeMQ.matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#0b0f18' : '#1d2433';
+  $('btnTheme').textContent = { auto: '🌗', dark: '🌙', light: '☀️' }[pref];
+  $('btnTheme').title = THEME_NAMES[pref] + ' — clique para trocar';
+}
+$('btnTheme').onclick = () => {
+  const order = ['auto', 'dark', 'light'], next = order[(order.indexOf(themePref()) + 1) % order.length];
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* sem storage */ }
+  applyTheme(); toast(THEME_NAMES[next]);
+};
+themeMQ.addEventListener('change', applyTheme);
+applyTheme();
 $('pillBtn').onclick = () => { if (DATA.session) tileModal(DATA.session.id); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); $('reader').classList.remove('on'); } });
 $('readerX').onclick = () => { $('reader').classList.remove('on'); $('readerF').srcdoc = ''; };
