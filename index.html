@@ -441,6 +441,7 @@ async function cloudChildren(rel) {
 }
 async function listFromCloud() {
   const files = [], dirs = [];
+  let scanned = 0;
   const known = new Map((DATA.lessons || []).map(l => [l.path, l.title]));
   const top = (await cloudChildren('')).filter(x => x.folder && !/^[_.]/.test(x.name));
   await Promise.all(top.map(async d1 => {
@@ -449,11 +450,19 @@ async function listFromCloud() {
       const rel2 = d1.name + '/' + d2.name;
       dirs.push(rel2);
       if (!RE.lesson.test(d2.name.normalize('NFC'))) return;
-      const prod = (await cloudChildren(rel2)).find(x => x.folder && RE.prod.test(x.name.normalize('NFC')));
-      if (!prod) return;
-      for (const f of await cloudChildren(rel2 + '/' + prod.name)) {
+      // vai direto a 01_Produção (uma ida ao OneDrive a menos); só lista a pasta da aula se o nome variar
+      let prodName = '01_Produção', items;
+      try { items = await cloudChildren(rel2 + '/' + prodName); }
+      catch (e) {
+        if (e.status !== 404) throw e;
+        const prod = (await cloudChildren(rel2)).find(x => x.folder && RE.prod.test(x.name.normalize('NFC')));
+        if (!prod) return;
+        prodName = prod.name; items = await cloudChildren(rel2 + '/' + prodName);
+      }
+      scanProgress(++scanned);
+      for (const f of items) {
         if (!f.file || !/\.html?$/i.test(f.name)) continue;
-        const rel = [rel2, prod.name, f.name].join('/');
+        const rel = [rel2, prodName, f.name].join('/');
         // título já conhecido evita baixar o fichamento de novo
         files.push({ rel, read: async () => known.has(rel.normalize('NFC')) ? `<title>${esc(known.get(rel.normalize('NFC')))}</title>` : (await (await graph(itemPath(rel) + '/content')).text()).slice(0, 16000) });
       }
@@ -579,10 +588,23 @@ async function connectFolder() {
     } catch (e) { if (e.name !== 'AbortError') toast('Não consegui abrir a pasta: ' + e.message, true); }
   } else $('dirInput').click();
 }
-async function syncFromRemote(showReport) {
-  const remote = await readRemote().catch(() => null);
-  if (remote && !SIM) DATA = mergeData(DATA, remote);
-  await applyScan(IS_WEB ? await listFromCloud() : await listFromHandle(dirHandle), showReport);
+// aviso de andamento no botão ⟳ enquanto a varredura roda (no OneDrive leva alguns segundos)
+function scanProgress(n) {
+  const b = $('btnSync');
+  if (n === false) { b.disabled = false; b.textContent = '⟳ Atualizar fontes'; return; }
+  b.disabled = true;
+  b.textContent = IS_WEB ? `⏳ Lendo o OneDrive…${n ? ` ${n} aula(s)` : ''}` : '⏳ Lendo a pasta…';
+}
+let syncing = null;
+function syncFromRemote(showReport) {
+  if (syncing) return syncing;
+  scanProgress(0);
+  syncing = (async () => {
+    const remote = await readRemote().catch(() => null);
+    if (remote && !SIM) DATA = mergeData(DATA, remote);
+    await applyScan(IS_WEB ? await listFromCloud() : await listFromHandle(dirHandle), showReport);
+  })().finally(() => { syncing = null; scanProgress(false); });
+  return syncing;
 }
 async function refreshSources() {
   if (IS_WEB) {
