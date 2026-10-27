@@ -675,6 +675,7 @@ function renderToday() {
 }
 function renderWarn() {
   const w = [];
+  if (!connected() && DATA.lessons?.length && !SIM) w.push(['dark', `☁️ Este aparelho NÃO está sincronizando: o progresso fica só neste navegador e não aparece no celular nem no PC. ${IS_WEB ? 'Clique em 🔑 Entrar com a conta Microsoft.' : 'Clique em 📂 Reconectar pasta e permita o acesso.'}`]);
   const drain = S.pending * CONFIG.skipCost;
   if (S.pending) w.push(['', `☠️ ${S.pending} aula(s) pendente(s) drenam ${drain}🪙 por dia${S.points > 0 ? ` — seu saldo zera em ${Math.ceil(S.points / drain)} dia(s)` : ' — e você já está no vermelho'}. Estude-as para estancar.`]);
   if (S.points < 0) w.push(['dark', `💀 Dívida de ${-S.points}🪙. Pulos bloqueados e você perde ${CONFIG.debtXp} XP por dia até sair do vermelho.`]);
