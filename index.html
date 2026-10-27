@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1d2433">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Tabuleiro de Estudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1d2433; --ink-soft:#4b5568; --paper:#fffaf0; --card:#ffffff; --line:#e6dcc8;
+  --gold:#f6b60c; --gold-deep:#c98a00; --danger:#d7263d; --danger-deep:#7a0f1c; --ok:#1fa463;
+  --path:#f3e3bf; --path-edge:#d9c39a; --progress:#ffcf3f;
+  --sky-a:#8fd3ff; --sky-b:#e8f7ff; --ground:#9ad37a;
+  --radius:16px;
+  --font-title:"Fredoka", "Segoe UI", system-ui, sans-serif;
+  --font-body:"Nunito", "Segoe UI", system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:var(--font-body); color:var(--ink);
+  background:linear-gradient(180deg,var(--sky-a) 0%,var(--sky-b) 55%,#f6fbe9 100%);
+  background-attachment:fixed; transition:background 1.2s ease;
+  overflow-x:hidden;
+}
+body.storm-1{--sky-a:#a9bccb;--sky-b:#dfe6ea}
+body.storm-2{--sky-a:#4d5a69;--sky-b:#8d98a3;--path:#d8ccb4;--path-edge:#a8977a}
+body.storm-3{--sky-a:#141a24;--sky-b:#39414d;--path:#b9ad97;--path-edge:#7f715a}
+body.storm-2 .hud, body.storm-3 .hud{background:rgba(25,30,40,.82);color:#f1f3f7}
+body.storm-2 .hud .chip, body.storm-3 .hud .chip{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);color:#f1f3f7}
+body.storm-2 .today, body.storm-3 .today, body.storm-2 .legend, body.storm-3 .legend{background:rgba(25,30,40,.75);color:#eef1f6;border-color:rgba(255,255,255,.12)}
+.scene{position:fixed;left:0;right:0;bottom:0;width:100%;height:34vh;z-index:1;pointer-events:none;color:#1f2d4d;opacity:.12;transition:color 1.2s, opacity 1.2s}
+body.storm-2 .scene, body.storm-3 .scene{color:#05070b;opacity:.35}
+#rain,#confetti{position:fixed;inset:0;pointer-events:none;z-index:5}
+#confetti{z-index:60}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:6}
+#flash.on{animation:flash .6s ease-out}
+@keyframes flash{0%{opacity:.85}15%{opacity:.1}25%{opacity:.6}100%{opacity:0}}
+.clouds{position:fixed;inset:0 0 auto 0;height:220px;pointer-events:none;z-index:0;opacity:.0;transition:opacity 1.2s}
+body.storm-1 .clouds{opacity:.55} body.storm-2 .clouds{opacity:.85} body.storm-3 .clouds{opacity:1}
+.clouds span{position:absolute;top:var(--t);left:-30%;width:var(--w);height:calc(var(--w)*.38);border-radius:999px;
+  background:radial-gradient(circle at 30% 40%,#cfd6de,#8a95a2 70%);filter:blur(2px);animation:drift var(--d) linear infinite;animation-delay:var(--dl)}
+body.storm-3 .clouds span{background:radial-gradient(circle at 30% 40%,#4a5361,#1d232c 70%)}
+@keyframes drift{to{transform:translateX(170vw)}}
+
+/* HUD */
+.hud{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;
+  padding:10px 16px;background:rgba(255,250,240,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);transition:background 1s}
+.brand{font-family:var(--font-title);font-weight:700;font-size:1.25rem;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.brand small{font-family:var(--font-body);font-weight:600;font-size:.75rem;opacity:.65}
+.stats{display:flex;flex-wrap:wrap;gap:8px;flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);
+  font-weight:700;font-size:.9rem;white-space:nowrap}
+.chip small{font-weight:600;opacity:.65}
+.chip.bad{background:#ffe3e6;border-color:#f3a3ad;color:var(--danger-deep)}
+.chip.lvl .bar{width:64px;height:8px;border-radius:9px;background:rgba(0,0,0,.12);overflow:hidden}
+.chip.lvl .bar i{display:block;height:100%;background:linear-gradient(90deg,#6dd5ff,#7c5cff)}
+.actions{display:flex;gap:8px}
+button{font-family:var(--font-title);font-weight:600;font-size:.95rem;border:0;border-radius:12px;padding:9px 14px;cursor:pointer;
+  background:#fff;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.18);transition:transform .08s, filter .15s}
+button:hover{filter:brightness(1.05)} button:active{transform:translateY(2px);box-shadow:none}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:linear-gradient(180deg,#ffd54a,#f6a90c);color:#3b2600}
+button.go{background:linear-gradient(180deg,#43d17f,#1fa463);color:#fff}
+button.kindle{background:linear-gradient(180deg,#5a6b7d,#36424f);color:#fff}
+button.danger{background:linear-gradient(180deg,#ff5c6f,#c41d33);color:#fff}
+button.ghost{background:transparent;box-shadow:none;border:1px solid var(--line)}
+.sim{background:#7c5cff;color:#fff;border-color:#7c5cff}
+
+.today{margin:12px 16px 0;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.75);border:1px solid var(--line);
+  font-weight:700;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.today .late{color:var(--danger)}
+#warn{margin:10px 16px 0;display:flex;flex-direction:column;gap:8px}
+.warn{padding:10px 14px;border-radius:12px;font-weight:800;color:#fff;background:linear-gradient(90deg,#7a0f1c,#d7263d);
+  box-shadow:0 0 0 2px rgba(215,38,61,.25),0 6px 18px rgba(122,15,28,.35);animation:throb 1.8s ease-in-out infinite;letter-spacing:.01em}
+.warn.soft{background:linear-gradient(90deg,#8a5a00,#d08b00);animation:none}
+.warn.dark{background:linear-gradient(90deg,#10141b,#3a1020)}
+@keyframes throb{0%,100%{transform:scale(1)}50%{transform:scale(1.008);box-shadow:0 0 0 4px rgba(215,38,61,.35),0 6px 22px rgba(122,15,28,.5)}}
+
+main{position:relative;z-index:2;display:grid;grid-template-columns:1fr;gap:12px;padding:12px 16px 120px}
+.board-wrap{width:100%}
+#board{width:100%;height:auto;display:block;overflow:visible}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.75);border:1px solid var(--line);font-size:.88rem}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+.legend em{font-style:normal;font-weight:600;opacity:.7}
+
+/* board svg */
+.tile{cursor:pointer;transition:filter .6s}
+.tile .base{stroke:rgba(0,0,0,.18);stroke-width:2}
+.tile text{font-family:var(--font-title);pointer-events:none;text-anchor:middle}
+.tile .num{font-weight:700;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.25);stroke-width:3px}
+.tile .sig{font-weight:600;fill:#fff;opacity:.95}
+.tile .dt{font-weight:500;fill:#fff;opacity:.85}
+.tile.st-locked .num,.tile.st-locked .sig,.tile.st-locked .dt{fill:#e9edf3;stroke:none}
+.tile.st-current .ring{animation:ring 1.3s ease-in-out infinite}
+@keyframes ring{0%,100%{stroke-opacity:.95;stroke-width:5}50%{stroke-opacity:.3;stroke-width:9}}
+.tile.st-pending .base{animation:pend 1.1s ease-in-out infinite}
+@keyframes pend{0%,100%{stroke:#ff3b52;stroke-width:3}50%{stroke:#ffd1d6;stroke-width:6}}
+.tile .shimmer{animation:shim 2.6s ease-in-out infinite;pointer-events:none}
+@keyframes shim{0%,100%{opacity:0}50%{opacity:.45}}
+.tile:hover{filter:brightness(1.08)}
+.gem{stroke:#fff;stroke-width:1.5}
+.chest{cursor:pointer}
+.chest text{text-anchor:middle;font-family:var(--font-title);pointer-events:none}
+.lb{paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:4px;stroke-linejoin:round}
+.today a{color:inherit;text-decoration:none;border-bottom:2px dotted currentColor}
+.chest.done .glow{animation:chestglow 2.4s ease-in-out infinite}
+@keyframes chestglow{0%,100%{opacity:.35}50%{opacity:.9}}
+#pawn{transition:transform .32s cubic-bezier(.3,1.6,.5,1);pointer-events:none}
+#pawn .bob{animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.crack{stroke:#1b0d0d;stroke-width:2.2;fill:none;stroke-linecap:round;opacity:.75}
+
+/* session pill */
+#pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;display:none;align-items:center;gap:12px;
+  padding:10px 12px 10px 18px;border-radius:999px;background:#1d2433;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.35);font-weight:800;max-width:calc(100vw - 32px)}
+#pill.on{display:flex}
+#reader{position:fixed;inset:0;z-index:55;background:#fff;display:none;flex-direction:column}
+#reader.on{display:flex} #reader.on ~ #pill{z-index:58}
+.rbar{display:flex;gap:10px;align-items:center;padding:8px 12px;background:#1d2433;color:#fff;font-weight:700}
+.rbar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#reader iframe{flex:1;border:0;width:100%}
+#pill .t{font-family:var(--font-title);font-size:1.3rem;font-variant-numeric:tabular-nums}
+#pill .l{font-size:.85rem;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(15,20,30,.55);display:none;align-items:center;justify-content:center;padding:16px}
+.modal.on{display:flex}
+.card{background:var(--paper);border-radius:22px;max-width:620px;width:100%;max-height:calc(100vh - 32px);overflow:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,.4);animation:pop .25s cubic-bezier(.3,1.5,.5,1)}
+@keyframes pop{from{transform:scale(.9);opacity:0}}
+.card .head{padding:18px 20px;border-radius:22px 22px 0 0;color:#fff;position:relative}
+.card .head h2{margin:4px 0 0;font-family:var(--font-title);font-size:1.35rem;line-height:1.2}
+.card .head .meta{font-weight:700;opacity:.92;font-size:.9rem}
+.card .x{position:absolute;right:12px;top:12px;background:rgba(255,255,255,.25);color:#fff;box-shadow:none;padding:6px 11px}
+.card .body{padding:16px 20px 20px}
+.card h3{font-family:var(--font-title);margin:14px 0 8px;font-size:1.05rem}
+.card p{margin:8px 0;line-height:1.5}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.hist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.hist li{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.9rem}
+.hist li .n{display:block;margin-top:4px;font-style:italic;color:var(--ink-soft);white-space:pre-wrap}
+.note{font-size:.85rem;color:var(--ink-soft)}
+.timer{font-family:var(--font-title);font-size:2.4rem;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
+.timer.over{color:var(--ok)} #pill .t.over{color:#6ef0a5}
+textarea,input[type=number],select{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#fff}
+textarea{min-height:120px;resize:vertical}
+label{font-weight:700;font-size:.9rem;display:block;margin:10px 0 4px}
+.counter{font-size:.8rem;font-weight:700;text-align:right}
+.counter.okc{color:var(--ok)} .counter.no{color:var(--danger)}
+.rep li{margin:4px 0}
+.journal .day{margin:10px 0 4px;font-family:var(--font-title);font-weight:600}
+.journal .it{font-size:.9rem;padding:3px 0 3px 10px;border-left:3px solid var(--line)}
+.journal .it.loss{border-color:var(--danger);color:var(--danger-deep)}
+.journal .it.gain{border-color:var(--ok)}
+.journal .it.shield{border-color:#3b82f6}
+.big{font-size:3.4rem;text-align:center;margin:6px 0}
+.center{text-align:center}
+.toast{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:70;font-family:var(--font-title);font-weight:700;font-size:1.4rem;
+  color:#fff;background:#1fa463;padding:10px 18px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:toast 2.2s ease forwards}
+.toast.bad{background:var(--danger)}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,10px)}12%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-20px)}}
+.welcome{max-width:640px;margin:40px auto;padding:0 16px;position:relative;z-index:3}
+.welcome .card{animation:none}
+@media (max-width:640px){
+  .brand small{display:none}
+  .chip{font-size:.8rem;padding:5px 8px}
+  .chip.lvl .bar{width:40px}
+  .timer{font-size:2rem}
+}
+</style>
+</head>
+<body class="storm-0">
+<div class="clouds" aria-hidden="true">
+  <span style="--t:10px;--w:260px;--d:70s;--dl:-10s"></span><span style="--t:60px;--w:340px;--d:95s;--dl:-50s"></span>
+  <span style="--t:20px;--w:200px;--d:60s;--dl:-30s"></span><span style="--t:110px;--w:300px;--d:110s;--dl:-80s"></span>
+</div>
+<svg class="scene" aria-hidden="true" viewBox="0 0 1200 260" preserveAspectRatio="xMidYMax slice">
+  <g fill="currentColor">
+    <path d="M60,120 L250,60 L440,120 Z"/><rect x="70" y="122" width="360" height="16"/>
+    <rect x="90" y="140" width="22" height="90"/><rect x="146" y="140" width="22" height="90"/><rect x="202" y="140" width="22" height="90"/>
+    <rect x="258" y="140" width="22" height="90"/><rect x="314" y="140" width="22" height="90"/><rect x="370" y="140" width="22" height="90"/>
+    <rect x="60" y="230" width="380" height="10"/><rect x="40" y="240" width="420" height="20"/>
+    <g transform="translate(1010,0)">
+      <circle cx="0" cy="62" r="13"/><path d="M-12,56 L12,56 L10,62 L-10,62 Z" opacity=".5"/>
+      <path d="M-16,78 Q0,72 16,78 L30,236 L-30,236 Z"/>
+      <path d="M14,82 L64,52 L68,58 L18,92 Z"/>
+      <path d="M66,30 V54 M38,34 H94" stroke="currentColor" stroke-width="3"/>
+      <path d="M38,34 L30,58 M38,34 L46,58 M94,34 L86,58 M94,34 L102,58" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M28,58 Q38,68 48,58 Z M84,58 Q94,68 104,58 Z"/>
+      <path d="M-14,84 L-34,150 L-30,152 L-10,92 Z"/><path d="M-33,150 L-40,214 L-36,215 L-29,152 Z"/>
+      <rect x="-50" y="236" width="100" height="24"/>
+    </g>
+  </g>
+</svg>
+<canvas id="rain"></canvas><div id="flash"></div>
+
+<header class="hud">
+  <div class="brand">⚖️ Tabuleiro de Estudos <small>Carreira jurídica · 10º período</small></div>
+  <div class="stats" id="stats"></div>
+  <div class="actions">
+    <button id="btnSync" title="Varre de novo as pastas das disciplinas">⟳ Atualizar fontes</button>
+    <button id="btnMenu" title="Menu">☰</button>
+  </div>
+</header>
+<div class="today" id="today"></div>
+<div id="warn"></div>
+<main id="main">
+  <div class="board-wrap"><svg id="board"></svg></div>
+  <div class="legend" id="legend"></div>
+</main>
+<div id="reader"><div class="rbar"><button id="readerX">✕ Fechar</button><span id="readerT"></span></div><iframe id="readerF" title="Fichamento" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe></div>
+<div id="pill"><span>⏳</span><div><div class="t" id="pillT">00:00</div><div class="l" id="pillL"></div></div><button class="go" id="pillBtn">Abrir</button></div>
+<div class="modal" id="modal"><div class="card" id="modalCard"></div></div>
+<canvas id="confetti"></canvas>
+<input type="file" id="dirInput" webkitdirectory hidden>
+<input type="file" id="importInput" accept=".json,application/json" hidden>
+
+<script>
+// ==ENGINE== (funções puras: varredura das pastas e replay do log de eventos)
+const CONFIG = {
+  studyMin: 15,          // minutos mínimos para vencer uma casa
+  reviewMin: 5,          // minutos mínimos para uma revisão
+  kindleChars: 100,      // caracteres mínimos do diário de bordo (estudo no Kindle)
+  kindleReviewChars: 60, // idem para revisão no Kindle
+  startPts: 30, skipCost: 15,
+  xpStudy: 20, xpReview: 5, xpPerLevel: 100,
+  ptsReview: 5, ptsReviewFaded: 10,
+  idleXp: 15, debtXp: 10, weekBonus: 30,
+  fadeStart: 7, fadeFull: 21, maxLevel: 4,
+  colors: ['#e8504a', '#2f8fe0', '#f29f05', '#22a865', '#9b59e0', '#e0559b', '#16a3a3'],
+};
+const RE = {
+  disc: /^(\d+)\.\s*(.+?)\s*¦\s*(.+)$/,
+  lesson: /^(\d{6})\s*-\s*A(\d+)\s*-/,
+  fic: /^A(\d+)\s*¦\s*(\d{6})\s*¦\s*FIC\s*¦\s*(.+?)\.html?$/i,
+  prod: /^01_Produ(c|ç)(a|ã)o$/i,
+};
+const D = {
+  key(dt) { return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`; },
+  parse(k) { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); },
+  add(k, n) { const t = D.parse(k); t.setDate(t.getDate() + n); return D.key(t); },
+  diff(a, b) { return Math.round((D.parse(b) - D.parse(a)) / 864e5); },
+  monday(k) { const t = D.parse(k); t.setDate(t.getDate() - (t.getDay() + 6) % 7); return D.key(t); },
+  fromYYMMDD(s) {
+    const y = 2000 + +s.slice(0, 2), m = +s.slice(2, 4), d = +s.slice(4, 6), t = new Date(y, m - 1, d);
+    return t.getMonth() === m - 1 && t.getDate() === d ? D.key(t) : null;
+  },
+  br(k) { const [, m, d] = k.split('-'); return `${d}/${m}`; },
+  wd(k) { return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][D.parse(k).getDay()]; },
+};
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const decodeEntities = s => s.replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, e) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' })[e]).replace(/\s+/g, ' ');
+
+// files: [{rel:'Disc/Aula/01_Produção/arquivo.html', read:()=>Promise<string>}]; dirs: ['Disc/Subpasta', ...]
+async function buildLessons(files, dirs) {
+  const N = s => s.normalize('NFC');
+  const report = { ignored: [], problems: [] };
+  const byDir = new Map();
+  for (const f of files) {
+    const seg = N(f.rel).split('/');
+    if (seg.length !== 4 || !RE.prod.test(seg[2])) continue;
+    const k = seg[0] + '/' + seg[1];
+    if (!byDir.has(k)) byDir.set(k, []);
+    byDir.get(k).push({ name: seg[3], rel: seg.join('/'), read: f.read });
+  }
+  const lessons = [], seenTop = new Set(), seenId = new Set();
+  for (const dRel of [...new Set(dirs.map(N))].sort()) {
+    const seg = dRel.split('/');
+    if (seg.length !== 2 || seg[0].startsWith('_') || seg[0].startsWith('.')) continue;
+    const [top, sub] = seg;
+    const dm = top.match(RE.disc);
+    if (!dm) {
+      if (!seenTop.has(top)) { seenTop.add(top); report.ignored.push({ path: top, reason: 'pasta fora do padrão "N. Disciplina ¦ Professor"' }); }
+      continue;
+    }
+    if (/^AAMMDD/i.test(sub)) continue; // pasta-modelo
+    if (!RE.lesson.test(sub)) { report.ignored.push({ path: dRel, reason: 'não é pasta de aula (ex.: "1ª Unidade") — ignorada com tudo dentro' }); continue; }
+    const cands = (byDir.get(dRel) || []).filter(x => RE.fic.test(x.name)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!cands.length) { report.problems.push({ path: dRel, reason: 'sem "Ann ¦ AAMMDD ¦ FIC ¦ Sigla.html" direto em 01_Produção' }); continue; }
+    const f = cands[0], fm = f.name.match(RE.fic), date = D.fromYYMMDD(fm[2]);
+    if (!date) { report.problems.push({ path: f.rel, reason: 'data inválida no nome do arquivo' }); continue; }
+    const num = +fm[1], sigla = fm[3].trim();
+    const id = `${sigla}-${fm[2]}-A${String(num).padStart(2, '0')}`;
+    if (seenId.has(id)) { report.problems.push({ path: f.rel, reason: `aula duplicada (${id})` }); continue; }
+    seenId.add(id);
+    let title = '';
+    try { const tm = (await f.read()).match(/<title[^>]*>([\s\S]*?)<\/title>/i); if (tm) title = decodeEntities(tm[1]).trim(); } catch (e) { /* sem título */ }
+    lessons.push({ id, sigla, num, date, discN: +dm[1], discName: dm[2].trim(), prof: dm[3].trim(), title: title || `Aula ${num}`, path: f.rel });
+  }
+  lessons.sort((a, b) => a.date.localeCompare(b.date) || a.discN - b.discN || a.num - b.num);
+  return { lessons, report };
+}
+
+function lessonLabel(L, id) { return L ? `${L.sigla} A${String(L.num).padStart(2, '0')}` : id; }
+
+// data: {startDay, events:[{uid,t:'study'|'review'|'skip',id,day,ts,src,min,note}]}
+function replay(data, lessons, today) {
+  const C = CONFIG;
+  const byId = Object.fromEntries(lessons.map(l => [l.id, l]));
+  const T = {};
+  const tile = id => T[id] || (T[id] = { status: 'locked', reviews: [], history: [], level: 0, lastTouch: null, skipDay: null, studiedDay: null, src: null, everSkipped: false });
+  const s = { studySec: 0, points: C.startPts, xp: 0, streak: 0, best: 0, idleRun: 0, shields: {}, weeks: {}, journal: {}, srcCount: { pc: 0, kindle: 0 }, todayAdvanced: false };
+  const weekLessons = {};
+  for (const l of lessons) (weekLessons[D.monday(l.date)] ||= []).push(l.id);
+  const evs = data.events.filter(e => e.day <= today).sort((a, b) => a.day.localeCompare(b.day) || a.ts.localeCompare(b.ts));
+  const start = data.startDay;
+  const first = evs.length && evs[0].day < start ? evs[0].day : start;
+  const note = (d, kind, text) => (s.journal[d] ||= []).push({ kind, text });
+  const available = () => lessons.some(l => (T[l.id]?.status || 'locked') !== 'done');
+  let i = 0;
+  for (let d = first; d <= today; d = D.add(d, 1)) {
+    let advanced = false;
+    while (i < evs.length && evs[i].day === d) {
+      const e = evs[i++], t = tile(e.id), lab = lessonLabel(byId[e.id], e.id);
+      if (e.t !== 'skip') s.studySec += e.sec || (e.min || 0) * 60;
+      if (e.t === 'study') {
+        if (t.status === 'done') continue;
+        const wasPending = t.status === 'pending';
+        Object.assign(t, { status: 'done', studiedDay: d, lastTouch: d, src: e.src, skipDay: null });
+        t.history.push(e); s.xp += C.xpStudy; s.srcCount[e.src] = (s.srcCount[e.src] || 0) + 1; advanced = true;
+        note(d, 'gain', `${lab} vencida ${e.src === 'kindle' ? '📖' : '💻'}${e.sec ? ` em ${Math.round(e.sec / 60)} min` : e.min ? ` em ${e.min} min` : ''}${wasPending ? ' (pendência quitada)' : ''} · +${C.xpStudy} XP`);
+      } else if (e.t === 'review') {
+        if (t.status !== 'done') continue;
+        t.history.push(e); s.srcCount[e.src] = (s.srcCount[e.src] || 0) + 1;
+        if (!t.reviews.some(r => r.day === d)) {
+          const faded = D.diff(t.lastTouch, d) >= C.fadeStart;
+          const p = faded ? C.ptsReviewFaded : C.ptsReview;
+          s.points += p; s.xp += C.xpReview; t.level = Math.min(C.maxLevel, t.level + 1);
+          note(d, 'gain', `Revisão de ${lab} ${e.src === 'kindle' ? '📖' : '💻'}${faded ? ' (resgatou do desbotamento)' : ''} · +${p}🪙 +${C.xpReview} XP`);
+        }
+        t.reviews.push(e); t.lastTouch = d;
+        if (!available()) advanced = true;
+      } else if (e.t === 'skip') {
+        if (t.status !== 'locked' || s.points < C.skipCost) continue;
+        s.points -= C.skipCost; Object.assign(t, { status: 'pending', skipDay: d, everSkipped: true }); t.history.push(e);
+        note(d, 'loss', `Pulou ${lab} · −${C.skipCost}🪙`);
+      }
+    }
+    for (const [w, list] of Object.entries(weekLessons)) {
+      if (s.weeks[w] || !list.every(id => T[id]?.status === 'done')) continue;
+      const perfect = list.every(id => !T[id].everSkipped);
+      s.points += C.weekBonus; s.weeks[w] = { day: d, perfect };
+      note(d, 'gain', `Pauta da semana de ${D.br(w)} transitada em julgado${perfect ? ' — acórdão unânime 🏛️' : ' 🔨'} · +${C.weekBonus}🪙`);
+    }
+    if (d === today) { s.todayAdvanced = advanced; break; }
+    if (d < start) { if (advanced) { s.streak++; s.best = Math.max(s.best, s.streak); } continue; }
+    // fechamento do dia
+    for (const l of lessons) {
+      const t = T[l.id];
+      if (t?.status === 'pending' && t.skipDay < d) { s.points -= C.skipCost; note(d, 'loss', `Pendência ${lessonLabel(l)} drenou −${C.skipCost}🪙`); }
+    }
+    if (advanced) { s.streak++; s.best = Math.max(s.best, s.streak); s.idleRun = 0; }
+    else if (!s.shields[D.monday(d)]) { s.shields[D.monday(d)] = d; note(d, 'shield', 'Dia sem avanço — habeas corpus semanal concedido 🛡️'); }
+    else {
+      if (s.streak) note(d, 'loss', `Sequência de ${s.streak} dia(s) perdida 🔥💨`);
+      s.streak = 0; s.xp = Math.max(0, s.xp - C.idleXp); s.idleRun++;
+      note(d, 'loss', `Dia sem avanço · −${C.idleXp} XP`);
+    }
+    if (s.points < 0) { s.xp = Math.max(0, s.xp - C.debtXp); note(d, 'loss', `Saldo negativo · −${C.debtXp} XP`); }
+  }
+  const tiles = lessons.map(l => {
+    const t = T[l.id] || tile(l.id);
+    const fade = t.status === 'done' ? clamp((D.diff(t.lastTouch, today) - C.fadeStart) / (C.fadeFull - C.fadeStart), 0, 1) : 0;
+    return { ...l, ...t, fade, week: D.monday(l.date) };
+  });
+  const pending = tiles.filter(t => t.status === 'pending').length;
+  let score = Math.min(s.idleRun, 3) + pending + (s.points < 0 ? 2 : 0);
+  if (s.todayAdvanced) score = Math.max(0, score - 1);
+  return {
+    ...s, tiles, pending,
+    pawn: tiles.findIndex(t => t.status === 'locked'),
+    streakNow: s.streak + (s.todayAdvanced ? 1 : 0),
+    level: Math.floor(s.xp / C.xpPerLevel) + 1,
+    shieldAvailable: !s.shields[D.monday(today)],
+    storm: score === 0 ? 0 : score <= 1 ? 1 : score <= 3 ? 2 : 3,
+    fading: tiles.filter(t => t.fade > 0).length,
+    conquered: Object.values(T).filter(t => t.status === 'done').length,
+  };
+}
+// ==/ENGINE==
+
+// ===================== interface =====================
+const qs = new URLSearchParams(location.search);
+const SIM = /^\d{4}-\d{2}-\d{2}$/.test(qs.get('hoje') || '') ? qs.get('hoje') : null;
+const today = () => SIM || D.key(new Date());
+const STORE_KEY = 'tabuleiro10:v1' + (SIM ? ':sim' : '');
+const PROGRESS_FILE = '_tabuleiro_progresso.json';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const discColor = n => CONFIG.colors[(n - 1) % CONFIG.colors.length];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+let DATA = loadLocal() || { version: 1, startDay: today(), events: [], lessons: [], session: null, lastSeen: null, savedAt: 0 };
+let S = null, dirHandle = null, lastPawn = null;
+
+// ---------- nuvem: OneDrive pela Microsoft Graph (versão web: PC, celular, tablet) ----------
+const CLOUD = {
+  clientId: '',                    // ID do app registrado no Azure (Microsoft Entra)
+  authority: 'https://login.microsoftonline.com/consumers',
+  base: '01.DIREITO/2026.2/10º',    // pasta 10º dentro do OneDrive
+  scopes: ['Files.ReadWrite'],
+  msalUrl: 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js',
+};
+const IS_WEB = location.protocol !== 'file:';
+let MSAL = null, account = null;
+const connected = () => IS_WEB ? !!account : !!dirHandle;
+const isMobile = () => /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent);
+const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('não carregou o login da Microsoft')); document.head.appendChild(s); });
+async function cloudInit() {
+  if (!CLOUD.clientId) return;
+  await loadScript(CLOUD.msalUrl);
+  MSAL = new msal.PublicClientApplication({ auth: { clientId: CLOUD.clientId, authority: CLOUD.authority, redirectUri: location.origin + location.pathname }, cache: { cacheLocation: 'localStorage' } });
+  const r = await MSAL.handleRedirectPromise();
+  account = r?.account || MSAL.getAllAccounts()[0] || null;
+}
+function cloudLogin() {
+  if (!MSAL) return toast(CLOUD.clientId ? 'O login ainda está carregando…' : 'Versão web ainda sem o ID do app configurado', true);
+  MSAL.loginRedirect({ scopes: CLOUD.scopes });
+}
+async function token() {
+  try { return (await MSAL.acquireTokenSilent({ scopes: CLOUD.scopes, account })).accessToken; }
+  catch (e) { await MSAL.acquireTokenRedirect({ scopes: CLOUD.scopes, account }); throw e; }
+}
+const itemPath = rel => '/me/drive/root:/' + [...CLOUD.base.split('/'), ...(rel ? rel.split('/') : [])].map(encodeURIComponent).join('/') + ':';
+async function graph(path, opts = {}) {
+  const r = await fetch(path.startsWith('http') ? path : 'https://graph.microsoft.com/v1.0' + path, { ...opts, headers: { Authorization: 'Bearer ' + await token(), ...(opts.headers || {}) } });
+  if (!r.ok) { const err = new Error(`OneDrive respondeu ${r.status}`); err.status = r.status; throw err; }
+  return r;
+}
+async function cloudChildren(rel) {
+  const out = [];
+  let url = itemPath(rel) + '/children?$select=name,folder,file&$top=999';
+  while (url) { const j = await (await graph(url)).json(); out.push(...j.value); url = j['@odata.nextLink']; }
+  return out;
+}
+async function listFromCloud() {
+  const files = [], dirs = [];
+  const known = new Map((DATA.lessons || []).map(l => [l.path, l.title]));
+  const top = (await cloudChildren('')).filter(x => x.folder && !/^[_.]/.test(x.name));
+  await Promise.all(top.map(async d1 => {
+    const subs = (await cloudChildren(d1.name)).filter(x => x.folder);
+    await Promise.all(subs.map(async d2 => {
+      const rel2 = d1.name + '/' + d2.name;
+      dirs.push(rel2);
+      if (!RE.lesson.test(d2.name.normalize('NFC'))) return;
+      const prod = (await cloudChildren(rel2)).find(x => x.folder && RE.prod.test(x.name.normalize('NFC')));
+      if (!prod) return;
+      for (const f of await cloudChildren(rel2 + '/' + prod.name)) {
+        if (!f.file || !/\.html?$/i.test(f.name)) continue;
+        const rel = [rel2, prod.name, f.name].join('/');
+        // título já conhecido evita baixar o fichamento de novo
+        files.push({ rel, read: async () => known.has(rel.normalize('NFC')) ? `<title>${esc(known.get(rel.normalize('NFC')))}</title>` : (await (await graph(itemPath(rel) + '/content')).text()).slice(0, 16000) });
+      }
+    }));
+  }));
+  return { files, dirs };
+}
+
+// ---------- progresso: arquivo _tabuleiro_progresso.json (pasta local ou OneDrive) ----------
+async function readRemote() {
+  try {
+    if (IS_WEB) return account ? await (await graph(itemPath(PROGRESS_FILE) + '/content')).json() : null;
+    if (!dirHandle) return null;
+    return JSON.parse(await (await (await dirHandle.getFileHandle(PROGRESS_FILE)).getFile()).text());
+  } catch (e) {
+    if (e.status === 404 || e.name === 'NotFoundError') return null;
+    throw e;
+  }
+}
+async function writeRemote(text) {
+  if (IS_WEB) return graph(itemPath(PROGRESS_FILE) + '/content', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: text });
+  if ((await dirHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') return;
+  const w = await (await dirHandle.getFileHandle(PROGRESS_FILE, { create: true })).createWritable();
+  await w.write(text); await w.close();
+}
+function saveLocal() { try { localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); } catch (e) { /* sem storage */ } }
+function loadLocal() { try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { return null; } }
+let writeTimer = null;
+function save() {
+  DATA.savedAt = Date.now();
+  saveLocal();
+  if (SIM || !connected()) return;
+  clearTimeout(writeTimer);
+  writeTimer = setTimeout(writeProgressFile, 600);
+}
+// lê o arquivo antes de gravar e junta os eventos: PC, celular e tablet nunca apagam o que o outro registrou
+async function writeProgressFile() {
+  try {
+    const remote = await readRemote();
+    if (remote) { const n = DATA.events.length; DATA = mergeData(DATA, remote); if (DATA.events.length !== n) render(); }
+    DATA.savedAt = Date.now(); saveLocal();
+    await writeRemote(JSON.stringify(DATA, null, 1));
+  } catch (e) { console.warn('Falha ao gravar o progresso', e); }
+}
+async function pullRemote() {
+  if (SIM || !connected()) return;
+  const remote = await readRemote().catch(() => null);
+  if (!remote) return;
+  const before = JSON.stringify([DATA.events.length, DATA.session]);
+  DATA = mergeData(DATA, remote);
+  if (JSON.stringify([DATA.events.length, DATA.session]) !== before) { saveLocal(); render(); }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullRemote(); });
+function mergeData(a, b) {
+  if (!b) return a;
+  const map = new Map();
+  for (const e of [...(a.events || []), ...(b.events || [])]) map.set(e.uid, e);
+  const newer = (b.savedAt || 0) > (a.savedAt || 0) ? b : a;
+  return {
+    ...newer,
+    startDay: [a.startDay, b.startDay].filter(Boolean).sort()[0],
+    events: [...map.values()],
+    lessons: newer.lessons?.length ? newer.lessons : (a.lessons?.length ? a.lessons : b.lessons || []),
+    lastSeen: [a.lastSeen, b.lastSeen].filter(Boolean).sort().pop() || null,
+  };
+}
+
+// ---------- IndexedDB (guarda o acesso à pasta) ----------
+function idb() {
+  return new Promise((res, rej) => { const r = indexedDB.open('tabuleiro10', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+}
+async function idbGet(k) { try { const db = await idb(); return await new Promise(r => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => r(q.result); q.onerror = () => r(null); }); } catch (e) { return null; } }
+async function idbSet(k, v) { try { const db = await idb(); db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); } catch (e) { /* ok */ } }
+async function idbDel(k) { try { const db = await idb(); db.transaction('kv', 'readwrite').objectStore('kv').delete(k); } catch (e) { /* ok */ } }
+
+// ---------- varredura ----------
+async function listFromHandle(root) {
+  const files = [], dirs = [];
+  for await (const [n1, h1] of root.entries()) {
+    if (h1.kind !== 'directory' || n1.startsWith('_') || n1.startsWith('.')) continue;
+    for await (const [n2, h2] of h1.entries()) {
+      if (h2.kind !== 'directory') continue;
+      dirs.push(n1 + '/' + n2);
+      if (!RE.lesson.test(n2.normalize('NFC'))) continue;
+      for await (const [n3, h3] of h2.entries()) {
+        if (h3.kind !== 'directory' || !RE.prod.test(n3.normalize('NFC'))) continue;
+        for await (const [n4, h4] of h3.entries()) {
+          if (h4.kind !== 'file' || !/\.html?$/i.test(n4)) continue;
+          files.push({ rel: [n1, n2, n3, n4].join('/'), read: async () => (await h4.getFile()).slice(0, 16000).text() });
+        }
+      }
+    }
+  }
+  return { files, dirs };
+}
+function listFromFileList(list) {
+  const files = [], dirs = new Set();
+  for (const f of list) {
+    const seg = f.webkitRelativePath.split('/').slice(1);
+    if (seg.length >= 3) dirs.add(seg[0] + '/' + seg[1]);
+    if (seg.length === 4 && /\.html?$/i.test(seg[3])) files.push({ rel: seg.join('/'), read: () => f.slice(0, 16000).text() });
+  }
+  return { files, dirs: [...dirs] };
+}
+async function applyScan(listing, showReport) {
+  const { lessons, report } = await buildLessons(listing.files, listing.dirs);
+  const before = new Map((DATA.lessons || []).map(l => [l.id, l]));
+  const after = new Set(lessons.map(l => l.id));
+  report.added = lessons.filter(l => !before.has(l.id));
+  report.removed = [...before.values()].filter(l => !after.has(l.id));
+  report.total = lessons.length;
+  report.at = new Date().toISOString();
+  DATA.lessons = lessons; DATA.report = report;
+  save(); render();
+  if (showReport || report.added.length || report.removed.length) showReportModal(report, !showReport);
+}
+async function connectFolder() {
+  if (window.showDirectoryPicker) {
+    try {
+      const h = await showDirectoryPicker({ id: 'tabuleiro10', mode: 'readwrite' });
+      dirHandle = h; await idbSet('dir', h);
+      await syncFromRemote(true);
+    } catch (e) { if (e.name !== 'AbortError') toast('Não consegui abrir a pasta: ' + e.message, true); }
+  } else $('dirInput').click();
+}
+async function syncFromRemote(showReport) {
+  const remote = await readRemote().catch(() => null);
+  if (remote && !SIM) DATA = mergeData(DATA, remote);
+  await applyScan(IS_WEB ? await listFromCloud() : await listFromHandle(dirHandle), showReport);
+}
+async function refreshSources() {
+  if (IS_WEB) {
+    if (!account) return cloudLogin();
+    try { await syncFromRemote(true); } catch (e) { toast('Falha ao ler o OneDrive: ' + e.message, true); }
+    return;
+  }
+  if (!dirHandle) return connectFolder();
+  try {
+    if ((await dirHandle.requestPermission({ mode: 'readwrite' })) !== 'granted') return toast('Permissão negada para a pasta', true);
+    await syncFromRemote(true);
+  } catch (e) { toast('Falha ao varrer: ' + e.message, true); }
+}
+
+// ---------- eventos ----------
+function addEvent(e) {
+  const prev = S;
+  e = { uid: uid(), ts: new Date().toISOString(), day: today(), ...e };
+  DATA.events.push(e);
+  save();
+  lastPawn = prev ? prev.pawn : null;
+  render();
+  const newWeeks = Object.keys(S.weeks).filter(w => !prev?.weeks[w]);
+  if (e.t === 'study') {
+    toast(`+${CONFIG.xpStudy} XP · casa vencida!`); burst(40);
+    const st = stageOf(S.conquered);
+    if (prev && st > stageOf(prev.conquered)) setTimeout(() => toast(`Nova peça: ${WARDROBE[st - 1][1]} ${WARDROBE[st - 1][0]} · ${RANKS[st]}`), 1400);
+  }
+  if (e.t === 'review') toast('Revisão registrada ✨ a casa brilha mais');
+  if (e.t === 'skip') toast(`−${CONFIG.skipCost}🪙 · casa pendente`, true);
+  if (newWeeks.length) setTimeout(() => weekModal(newWeeks[newWeeks.length - 1], true), 900);
+}
+
+// ---------- render ----------
+function render() {
+  S = replay(DATA, DATA.lessons || [], today());
+  S._day = today();
+  document.body.className = 'storm-' + S.storm;
+  renderStats(); renderToday(); renderWarn(); renderBoard(); renderLegend(); renderPill(); weather();
+}
+const STORM_NAMES = ['☀️ Pauta em dia', '🌥️ Pauta carregada', '🌧️ Processos acumulados', '⛈️ Correição!'];
+function renderStats() {
+  const pct = (S.xp % CONFIG.xpPerLevel) / CONFIG.xpPerLevel * 100;
+  $('stats').innerHTML = `
+    <span class="chip" data-act="wardrobe" style="cursor:pointer" title="Ver o traje do personagem">🧑‍⚖️ <b>${RANKS[stageOf(S.conquered)]}</b> <small>${stageOf(S.conquered)}/${WARDROBE.length}</small></span>
+    <span class="chip lvl" title="${S.xp} XP">Nv <b>${S.level}</b><span class="bar"><i style="width:${pct}%"></i></span></span>
+    <span class="chip ${S.points < 0 ? 'bad' : ''}" title="Honorários: ganhos em revisões e semanas concluídas; gastos em pulos">🪙 <b>${S.points}</b></span>
+    <span class="chip" title="Dias seguidos com avanço">🔥 <b>${S.streakNow}</b> <small>recorde ${Math.max(S.best, S.streakNow)}</small></span>
+    <span class="chip" title="Habeas corpus: protege 1 dia parado por semana">🛡️ <small>${S.shieldAvailable ? 'HC disponível' : 'HC usado'}</small></span>
+    <span class="chip ${S.storm >= 2 ? 'bad' : ''}">${STORM_NAMES[S.storm]}</span>
+    <span class="chip" title="Estudos e revisões por origem">💻 ${S.srcCount.pc || 0} · 📖 ${S.srcCount.kindle || 0}</span>
+    ${SIM ? `<span class="chip sim">🧪 data simulada ${D.br(SIM)}</span>` : ''}
+    ${!dirHandle && window.showDirectoryPicker ? '' : ''}`;
+}
+function renderToday() {
+  const t = today();
+  let msg;
+  if (S.todayAdvanced) msg = '✅ Você já avançou hoje. A sequência está salva.';
+  else {
+    const now = new Date(), end = new Date(now); end.setHours(24, 0, 0, 0);
+    const h = Math.floor((end - now) / 36e5), m = Math.floor((end - now) / 6e4) % 60;
+    msg = `<span class="late">⏳ Ainda sem avanço hoje${SIM ? '' : ` — faltam ${h}h${String(m).padStart(2, '0')} para o dia contar como perdido`}${S.shieldAvailable ? ' (o habeas corpus 🛡️ ainda te protege)' : ''}.</span>`;
+  }
+  const cur = S.tiles[S.pawn];
+  $('today').innerHTML = `<span>📅 Hoje, ${D.wd(t)} ${D.br(t)}</span><span>${msg}</span>
+    ${cur ? `<span>🎯 Próxima casa: <a href="#" data-open="${esc(cur.id)}">${esc(lessonLabel(cur))} — ${esc(cur.title)}</a></span>` : (S.tiles.length ? '<span>🏁 Você está em dia com todas as aulas! Revise para manter o brilho.</span>' : '')}
+    ${!connected() ? `<button class="primary" id="btnConnect">${IS_WEB ? '🔑 Entrar com a conta Microsoft' : `📂 ${DATA.lessons?.length ? 'Reconectar pasta' : 'Conectar pasta 10º'}`}</button>` : ''}`;
+}
+function renderWarn() {
+  const w = [];
+  const drain = S.pending * CONFIG.skipCost;
+  if (S.pending) w.push(['', `☠️ ${S.pending} aula(s) pendente(s) drenam ${drain}🪙 por dia${S.points > 0 ? ` — seu saldo zera em ${Math.ceil(S.points / drain)} dia(s)` : ' — e você já está no vermelho'}. Estude-as para estancar.`]);
+  if (S.points < 0) w.push(['dark', `💀 Dívida de ${-S.points}🪙. Pulos bloqueados e você perde ${CONFIG.debtXp} XP por dia até sair do vermelho.`]);
+  if (S.idleRun > 0 && !S.todayAdvanced) w.push(['', `⛈️ ${S.idleRun} dia(s) seguido(s) sem avanço. A tempestade cresce sobre o tabuleiro.`]);
+  if (S.fading) w.push(['soft', `🍂 ${S.fading} casa(s) desbotando — revise para recuperar o brilho (+${CONFIG.ptsReviewFaded}🪙 cada).`]);
+  $('warn').innerHTML = w.map(([c, t]) => `<div class="warn ${c}">${t}</div>`).join('');
+}
+function renderLegend() {
+  const discs = new Map();
+  for (const t of S.tiles) {
+    const d = discs.get(t.discN) || { name: t.discName, prof: t.prof, sigla: t.sigla, n: 0, done: 0 };
+    d.n++; if (t.status === 'done') d.done++; discs.set(t.discN, d);
+  }
+  $('legend').innerHTML = [...discs.entries()].sort((a, b) => a[0] - b[0]).map(([n, d]) =>
+    `<span><i style="background:${discColor(n)}"></i>${esc(d.name)} <em>· ${esc(d.prof)} · ${d.done}/${d.n}</em></span>`).join('') ||
+    '<span>Nenhuma aula carregada ainda.</span>';
+}
+
+// ---------- tabuleiro SVG ----------
+function buildNodes() {
+  const nodes = [{ type: 'start' }];
+  const weeks = [...new Set(S.tiles.map(t => t.week))].sort();
+  const first = weeks[0];
+  for (const w of weeks) {
+    S.tiles.forEach((t, i) => { if (t.week === w) nodes.push({ type: 'tile', t, i }); });
+    nodes.push({ type: 'chest', week: w, n: first ? D.diff(first, w) / 7 + 1 : 1 });
+  }
+  nodes.push({ type: 'end' });
+  return nodes;
+}
+function renderBoard() {
+  const svg = $('board');
+  const W = Math.max(320, svg.parentElement.clientWidth);
+  const cols = clamp(Math.floor(W / 150), 3, 8), cell = W / cols, rowH = Math.min(150, cell * 1.05), top = 20;
+  const s = Math.min(cell * 0.66, 96);
+  const nodes = buildNodes();
+  nodes.forEach((n, i) => {
+    const row = Math.floor(i / cols), c = i % cols, col = row % 2 ? cols - 1 - c : c;
+    n.x = (col + 0.5) * cell; n.y = top + row * rowH + rowH / 2; n.row = row;
+  });
+  const H = top * 2 + Math.ceil(nodes.length / cols) * rowH + 10;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const pathD = upto => {
+    let d = `M${nodes[0].x},${nodes[0].y}`;
+    for (let i = 1; i <= upto && i < nodes.length; i++) {
+      const a = nodes[i - 1], b = nodes[i];
+      if (a.row === b.row) d += ` L${b.x},${b.y}`;
+      else { const dir = a.x > W / 2 ? 1 : -1, off = cell * 0.55 * dir; d += ` C${a.x + off},${a.y} ${b.x + off},${b.y} ${b.x},${b.y}`; }
+    }
+    return d;
+  };
+  const pawnNode = S.pawn >= 0 ? nodes.findIndex(n => n.type === 'tile' && n.i === S.pawn) : nodes.length - 1;
+  let out = `<defs>
+    <linearGradient id="hl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <radialGradient id="chestGlow"><stop offset="0" stop-color="#ffe58a"/><stop offset="1" stop-color="#ffe58a" stop-opacity="0"/></radialGradient>
+  </defs>
+  <path d="${pathD(nodes.length)}" fill="none" stroke="var(--path-edge)" stroke-width="${s * 0.42}" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${pathD(nodes.length)}" fill="none" stroke="var(--path)" stroke-width="${s * 0.34}" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${pathD(pawnNode)}" fill="none" stroke="var(--progress)" stroke-width="${s * 0.12}" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 ${s * 0.2}" opacity=".9"/>`;
+  for (const n of nodes) {
+    if (n.type === 'start') out += `<g transform="translate(${n.x},${n.y})"><circle r="${s * 0.42}" fill="#fff" stroke="var(--path-edge)" stroke-width="4"/><text text-anchor="middle" y="${s * 0.12}" font-size="${s * 0.38}">🏛️</text><text class="lb" text-anchor="middle" y="${s * 0.62}" font-family="Fredoka,sans-serif" font-weight="700" font-size="13" fill="var(--ink)">Fórum</text></g>`;
+    else if (n.type === 'end') out += `<g class="chest" transform="translate(${n.x},${n.y})"><circle r="${s * 0.42}" fill="#fff" stroke="var(--gold)" stroke-width="4"/><text y="${s * 0.12}" font-size="${s * 0.38}">🎓</text><text class="lb" y="${s * 0.62}" font-weight="700" font-size="13" fill="var(--ink)">Colação de grau</text></g>`;
+    else if (n.type === 'chest') out += chestSVG(n, s);
+    else out += tileSVG(n.t, n.x, n.y, s, n.i === S.pawn);
+  }
+  // peão
+  out += `<g id="pawn"><g class="bob"><g transform="scale(${(s * 1.05 / 100).toFixed(3)})">${figureSVG(S.conquered)}</g></g></g>`;
+  svg.innerHTML = out;
+  const pos = i => { const n = nodes[i]; return `translate(${n.x}px, ${n.y + s * 0.24}px)`; };
+  const pawn = $('pawn');
+  const from = lastPawn === null ? pawnNode : (lastPawn >= 0 ? nodes.findIndex(n => n.type === 'tile' && n.i === lastPawn) : nodes.length - 1);
+  lastPawn = null;
+  if (from >= 0 && from < pawnNode) {
+    pawn.style.transition = 'none'; pawn.style.transform = pos(from);
+    let k = from;
+    const step = () => { k++; while (k < pawnNode && nodes[k].type !== 'tile') k++; pawn.style.transition = ''; pawn.style.transform = pos(Math.min(k, pawnNode)); if (k < pawnNode) setTimeout(step, 340); };
+    setTimeout(step, 80);
+  } else { pawn.style.transition = 'none'; pawn.style.transform = pos(Math.max(0, pawnNode)); }
+}
+function tileSVG(t, x, y, s, isCur) {
+  const color = discColor(t.discN), h = s / 2;
+  const st = t.status === 'locked' ? (isCur ? 'current' : 'locked') : t.status;
+  let filter = '', fill = color, extra = '';
+  if (st === 'locked') fill = color;
+  if (st === 'done') {
+    const sat = 1 - 0.85 * t.fade, br = 1 - 0.2 * t.fade, glow = (2 + t.level * 4) * (1 - t.fade);
+    filter = `saturate(${(sat * (1 + t.level * 0.12)).toFixed(2)}) brightness(${br.toFixed(2)}) drop-shadow(0 0 ${glow.toFixed(1)}px ${color})`;
+  }
+  if (st === 'pending') fill = '#3a0b10';
+  const base = `<rect class="base" x="${-h}" y="${-h}" width="${s}" height="${s}" rx="16" fill="${fill}" ${st === 'locked' ? 'fill-opacity=".28"' : ''}/>`;
+  if (st === 'locked') extra += `<rect x="${-h}" y="${-h}" width="${s}" height="${s * 0.16}" rx="8" fill="${color}" opacity=".8"/>`;
+  if (st === 'current') extra += `<rect x="${-h}" y="${-h}" width="${s}" height="${s}" rx="16" fill="${color}" opacity=".55"/><rect class="ring" x="${-h - 5}" y="${-h - 5}" width="${s + 10}" height="${s + 10}" rx="20" fill="none" stroke="#fff"/>`;
+  if (st === 'done') {
+    extra += `<rect x="${-h}" y="${-h}" width="${s}" height="${s}" rx="16" fill="url(#hl)" opacity="${0.4 + t.level * 0.15}"/>`;
+    if (t.level >= 3 && t.fade < 0.3) extra += `<rect class="shimmer" x="${-h}" y="${-h}" width="${s}" height="${s}" rx="16" fill="#fff"/>`;
+    if (t.level >= CONFIG.maxLevel && t.fade < 0.3) extra += `<text x="0" y="${-h - 6}" font-size="${s * 0.26}">👑</text>`;
+    const g = t.reviews.length, shown = Math.min(g, 8);
+    for (let k = 0; k < shown; k++) {
+      const gx = -h + (k + 0.5) * (s / 8);
+      extra += `<circle class="gem" cx="${gx}" cy="${h - 2}" r="${s * 0.045}" fill="${t.reviews[k].src === 'kindle' ? '#7fd1ff' : '#ffd23f'}"/>`;
+    }
+    extra += `<text x="${h - 12}" y="${-h + 18}" font-size="${s * 0.17}">${t.src === 'kindle' ? '📖' : '💻'}</text>`;
+    if (t.fade > 0) extra += `<text x="${-h + 12}" y="${-h + 18}" font-size="${s * 0.17}">🍂</text>`;
+  }
+  if (st === 'pending') {
+    extra += `<path class="crack" d="M${-h + 8},${-h + 14} l${s * .18},${s * .14} l-${s * .06},${s * .16} l${s * .2},${s * .1}"/><path class="crack" d="M${h - 10},${-h + 10} l-${s * .15},${s * .2} l${s * .08},${s * .1}"/>
+      <text x="0" y="${s * 0.04}" font-size="${s * 0.3}" class="num">☠️</text><text x="0" y="${h - 8}" font-size="${s * 0.13}" style="fill:#ffb3bd;font-weight:700">−${CONFIG.skipCost}🪙/dia</text>`;
+  }
+  if (st === 'current' && S.idleRun > 0) extra += `<path class="crack" d="M${-h + 6},${h - 10} l${s * .2},-${s * .1} l${s * .1},-${s * .18}"/><path class="crack" d="M${h - 8},${h - 6} l-${s * .12},-${s * .2}"/>`;
+  const labels = st === 'pending'
+    ? `<text class="sig" y="${-h + 16}" font-size="${s * 0.14}">${esc(lessonLabel(t))}</text>`
+    : `<text class="num" y="${-s * 0.04}" font-size="${s * 0.26}">A${String(t.num).padStart(2, '0')}</text>
+       <text class="sig" y="${s * 0.17}" font-size="${s * 0.15}">${esc(t.sigla)}</text>
+       <text class="dt" y="${h - 10}" font-size="${s * 0.12}">${D.br(t.date)}</text>`;
+  return `<g class="tile st-${st}" data-id="${esc(t.id)}" transform="translate(${x},${y})" style="${filter ? `filter:${filter}` : ''}">
+    <title>${esc(lessonLabel(t))} · ${esc(t.title)}</title>${base}${extra}${labels}</g>`;
+}
+function chestSVG(n, s) {
+  const list = S.tiles.filter(t => t.week === n.week), done = list.filter(t => t.status === 'done').length;
+  const w = S.weeks[n.week], r = s * 0.42;
+  const icon = w ? (w.perfect ? '🏛️' : '🔨') : (done ? '📜' : '⚖️');
+  return `<g class="chest ${w ? 'done' : ''}" data-week="${n.week}" transform="translate(${n.x},${n.y})">
+    ${w ? `<circle class="glow" r="${r * 1.7}" fill="url(#chestGlow)"/>` : ''}
+    <circle r="${r}" fill="${w ? '#fff3c4' : '#fff'}" stroke="${w ? 'var(--gold)' : 'var(--path-edge)'}" stroke-width="${w ? 5 : 3}"/>
+    <text y="${s * 0.12}" font-size="${s * 0.36}">${icon}</text>
+    ${w ? `<text x="${r * 0.72}" y="${-r * 0.5}" font-size="${s * 0.2}">✅</text>` : ''}
+    <text class="lb" y="${r + 16}" font-size="12.5" font-weight="700" fill="var(--ink)">Semana ${n.n}</text>
+    <text class="lb" y="${r + 30}" font-size="11" fill="var(--ink-soft)">${D.br(n.week)}–${D.br(D.add(n.week, 6))} · ${done}/${list.length}</text></g>`;
+}
+
+// ---------- personagem ----------
+const WARDROBE = [
+  ['Calça social', '👖'], ['Sapatos sociais', '👞'], ['Camisa branca', '👔'], ['Gravata', '🎀'], ['Paletó', '🧥'], ['Maleta', '💼'],
+  ['Vade Mecum', '📕'], ['Toga', '⚫'], ['Colarinho (jabot)', '🤍'], ['Colar de honra', '🏅'], ['Malhete', '🔨'], ['Balança da Justiça', '⚖️'],
+];
+const RANKS = ['Calouro(a)', 'Calouro(a)', 'Estudante', 'Estudante', 'Estagiário(a)', 'Estagiário(a)', 'Advogado(a)', 'Advogado(a)', 'Promotor(a)', 'Promotor(a)', 'Juiz(a)', 'Desembargador(a)', 'Ministro(a)'];
+const stageOf = n => Math.min(n, WARDROBE.length);
+// boneco com pés em (0,0), ~100 unidades de altura; ganha uma peça por casa vencida
+function figureSVG(conquered) {
+  const st = stageOf(conquered), extra = conquered - st;
+  const skin = '#f1c7a0', shirt = st >= 3 ? '#ffffff' : '#4fa3e0', navy = '#1f2d4d', robe = '#16161d', gold = '#f6b60c', toga = st >= 8;
+  const L = [];
+  L.push('<ellipse cx="0" cy="0" rx="20" ry="5" fill="rgba(0,0,0,.28)"/>');
+  if (st >= 12) L.push(`<circle cx="0" cy="-55" r="52" fill="${gold}" opacity=".18"/>`);
+  L.push(st >= 1
+    ? '<rect x="-11" y="-46" width="9" height="43" rx="3" fill="#3a3f4b"/><rect x="2" y="-46" width="9" height="43" rx="3" fill="#3a3f4b"/>'
+    : `<rect x="-10" y="-33" width="7" height="30" rx="3" fill="${skin}"/><rect x="3" y="-33" width="7" height="30" rx="3" fill="${skin}"/><rect x="-12" y="-47" width="24" height="17" rx="4" fill="#c9a66b"/>`);
+  L.push(st >= 2
+    ? '<ellipse cx="-7" cy="-3" rx="7.5" ry="3.6" fill="#111"/><ellipse cx="7" cy="-3" rx="7.5" ry="3.6" fill="#111"/>'
+    : '<ellipse cx="-7" cy="-3" rx="6.8" ry="3.6" fill="#fff" stroke="#aaa"/><ellipse cx="7" cy="-3" rx="6.8" ry="3.6" fill="#fff" stroke="#aaa"/>');
+  const armC = st >= 5 ? navy : shirt;
+  L.push(`<rect x="-22" y="-74" width="8" height="28" rx="4" fill="${armC}" stroke="rgba(0,0,0,.18)"/><rect x="14" y="-74" width="8" height="28" rx="4" fill="${armC}" stroke="rgba(0,0,0,.18)"/>`);
+  L.push(`<rect x="-15" y="-77" width="30" height="35" rx="7" fill="${shirt}" stroke="rgba(0,0,0,.18)"/>`);
+  if (st >= 3) L.push('<path d="M-6,-77 L0,-71 L6,-77 Z" fill="#fff" stroke="#bbb" stroke-width=".8"/>');
+  if (st >= 4) L.push('<path d="M-2.6,-72 L2.6,-72 L3.6,-55 L0,-50 L-3.6,-55 Z" fill="#c4122f"/>');
+  if (st >= 5) L.push(`<path d="M-15,-77 L-5,-77 L-1,-47 L-15,-43 Z" fill="${navy}"/><path d="M15,-77 L5,-77 L1,-47 L15,-43 Z" fill="${navy}"/>`);
+  if (toga) L.push(`<path d="M-16,-78 Q0,-81 16,-78 L23,-6 Q0,-1 -23,-6 Z" fill="${robe}"/><path d="M0,-70 L0,-6" stroke="#2c2c36" stroke-width="1.2"/>
+    <path d="M-15,-77 L-29,-47 L-15,-44 Z" fill="${robe}"/><path d="M15,-77 L29,-47 L15,-44 Z" fill="${robe}"/>`);
+  if (st >= 9) L.push('<path d="M-5.5,-77 L5.5,-77 L4.5,-63 L0,-65.5 L-4.5,-63 Z" fill="#fff" stroke="#ddd" stroke-width=".6"/>');
+  if (st >= 10) L.push(`<path d="M-12,-77 Q0,-54 12,-77" fill="none" stroke="${gold}" stroke-width="2"/><circle cx="0" cy="-58" r="3.4" fill="${gold}" stroke="#a26f00"/>`);
+  L.push(`<rect x="-3.5" y="-81" width="7" height="6" fill="${skin}"/>
+    <circle cx="0" cy="-89" r="11" fill="${skin}"/>
+    <path d="M-11.5,-90 Q-11,-103 0,-102 Q11,-103 11.5,-90 Q6,-97 0,-96 Q-6,-97 -11.5,-90 Z" fill="#3b2a1e"/>
+    <circle cx="-4" cy="-89" r="1.5" fill="#222"/><circle cx="4" cy="-89" r="1.5" fill="#222"/>
+    <path d="M-3.6,-84.5 Q0,-81.8 3.6,-84.5" stroke="#8a4b2a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`);
+  const hx = toga ? 25 : 18, hy = toga ? -45 : -44;
+  L.push(`<circle cx="${-hx}" cy="${hy}" r="4" fill="${skin}"/><circle cx="${hx}" cy="${hy}" r="4" fill="${skin}"/>`);
+  if (st >= 6 && st < 11) L.push(`<rect x="${hx - 6}" y="${hy + 3}" width="17" height="12" rx="2" fill="#7a4a21" stroke="#4d2c10"/><path d="M${hx - 1},${hy + 3} v-3 h6 v3" stroke="#4d2c10" fill="none" stroke-width="1.8"/>`);
+  if (st >= 11) L.push(`<g transform="translate(${hx},${hy}) rotate(-35)"><rect x="-1.6" y="-16" width="3.2" height="18" rx="1" fill="#8b5a2b"/><rect x="-8" y="-22" width="16" height="8" rx="2.5" fill="#6b3f1d"/></g>`);
+  if (st >= 7 && st < 12) L.push(`<rect x="${-hx - 6}" y="${hy - 4}" width="12" height="16" rx="1.5" fill="#1d6b3a" stroke="#0e3d20"/><rect x="${-hx - 5}" y="${hy}" width="10" height="2.2" fill="${gold}"/>`);
+  if (st >= 12) L.push(`<g transform="translate(${-hx},${hy})" stroke="${gold}" stroke-width="1.6" fill="none"><path d="M0,0 V-22 M-11,-19 H11 M-11,-19 L-14,-9 M-11,-19 L-8,-9 M11,-19 L8,-9 M11,-19 L14,-9"/><path d="M-15,-9 Q-11,-4 -7,-9 Z M7,-9 Q11,-4 15,-9 Z" fill="${gold}"/></g>`);
+  if (extra > 0) L.push(`<text x="0" y="-26" text-anchor="middle" font-size="9" font-weight="700" fill="${gold}" font-family="Fredoka,sans-serif">★${extra}</text>`);
+  return L.join('');
+}
+function wardrobeModal() {
+  const st = stageOf(S.conquered);
+  openModal(`<div class="head" style="background:linear-gradient(135deg,#16161d,#1f2d4d)"><button class="x" data-act="close">✕</button><div class="meta">Seu personagem · ${S.conquered} casa(s) vencida(s)</div><h2>${RANKS[st]}</h2></div>
+    <div class="body"><svg viewBox="-45 -112 90 118" style="display:block;margin:0 auto;width:180px;height:236px">${figureSVG(S.conquered)}</svg>
+    <p class="center">${st < WARDROBE.length ? `Próxima peça: <b>${WARDROBE[st][1]} ${WARDROBE[st][0]}</b> — vença mais uma casa.` : `Toga completa! Cada nova casa vira uma estrela ★ no traje.`}</p>
+    <ul class="hist">${WARDROBE.map(([n, e], i) => `<li>${i < st ? '✅' : '🔒'} ${e} ${n} <span class="note">· casa ${i + 1} · ${RANKS[i + 1]}</span></li>`).join('')}</ul>
+    <p class="note center">⏱️ Tempo total registrado: ${fmtDur(S.studySec)}</p></div>`);
+}
+
+// ---------- modais ----------
+function openModal(html) { $('modalCard').innerHTML = html; $('modal').classList.add('on'); }
+function closeModal() { $('modal').classList.remove('on'); $('modalCard').innerHTML = ''; }
+const fmtDay = d => `${D.wd(d)} ${D.br(d)}`;
+const lessonUrl = l => l.path.split('/').map(encodeURIComponent).join('/');
+async function openLesson(t) {
+  if (!IS_WEB) return window.open(lessonUrl(t), '_blank', 'noopener');
+  const f = $('readerF');
+  $('readerT').textContent = `${lessonLabel(t)} — ${t.title}`;
+  $('reader').classList.add('on');
+  f.srcdoc = '<p style="font:16px sans-serif;padding:24px">Carregando o fichamento do OneDrive…</p>';
+  try { f.srcdoc = await (await graph(itemPath(t.path) + '/content')).text(); }
+  catch (e) { f.srcdoc = `<p style="font:16px sans-serif;padding:24px">Não consegui abrir: ${esc(e.message)}</p>`; }
+}
+
+function tileModal(id) {
+  const t = S.tiles.find(x => x.id === id); if (!t) return;
+  const idx = S.tiles.indexOf(t), isCur = idx === S.pawn;
+  const st = t.status === 'locked' ? (isCur ? 'current' : 'locked') : t.status;
+  const sess = DATA.session;
+  const mySess = sess && sess.id === id;
+  const color = st === 'pending' ? '#7a0f1c' : discColor(t.discN);
+  const stateTxt = { locked: '🔒 À frente do peão', current: '🎯 Casa atual', done: `✅ Vencida · brilho ${t.level}/${CONFIG.maxLevel}${t.fade > 0 ? ' · 🍂 desbotando' : ''}`, pending: '☠️ Pendente — drenando pontos todo dia' }[st];
+  let actions = '';
+  if (mySess) actions = sessionBlock(t);
+  else if (sess) actions = `<p class="note">Há uma sessão em andamento em outra casa. Termine-a ou cancele antes.</p>`;
+  else if (st === 'current' || st === 'pending') {
+    actions = `<h3>Estudar esta aula (mín. ${CONFIG.studyMin} min)</h3>
+      <div class="row"><button class="go" data-act="start" data-kind="study" data-src="pc">${isMobile() ? '📱' : '💻'} Estudar nesta tela</button>
+      <button class="kindle" data-act="start" data-kind="study" data-src="kindle">📖 Sessão Kindle ao vivo</button>
+      <button class="ghost" data-act="later" data-kind="study">📖 Já estudei no Kindle</button></div>
+      <p class="note">${isMobile() ? '📱' : '💻'} abre o fichamento aqui e conta o tempo. 📖 ao vivo conta o tempo sem abrir nada aqui. "Já estudei" registra depois, com minutos e um diário de bordo.</p>`;
+    if (st === 'current') actions += `<h3>Pular</h3><div class="row"><button class="danger" data-act="skip" ${S.points < CONFIG.skipCost ? 'disabled' : ''}>⏭️ Pular (−${CONFIG.skipCost}🪙 agora e por dia)</button></div>${S.points < CONFIG.skipCost ? '<p class="note">Honorários insuficientes. Revise aulas anteriores para ganhar 🪙.</p>' : ''}`;
+  } else if (st === 'done') {
+    actions = `<h3>Revisar (mín. ${CONFIG.reviewMin} min) · +${t.fade > 0 || D.diff(t.lastTouch, today()) >= CONFIG.fadeStart ? CONFIG.ptsReviewFaded : CONFIG.ptsReview}🪙</h3>
+      <div class="row"><button class="go" data-act="start" data-kind="review" data-src="pc">${isMobile() ? '📱' : '💻'} Revisar nesta tela</button>
+      <button class="kindle" data-act="start" data-kind="review" data-src="kindle">📖 Revisão Kindle ao vivo</button>
+      <button class="ghost" data-act="later" data-kind="review">📖 Já revisei no Kindle</button></div>
+      ${t.reviews.some(r => r.day === today()) ? '<p class="note">Você já revisou esta casa hoje: novas revisões ficam no histórico, mas não pontuam.</p>' : ''}`;
+  } else actions = `<p class="note">Esta casa ainda está à frente. Vença a casa atual — ou pule-a — para chegar aqui. Pode espiar o conteúdo, mas não conta.</p>`;
+  const hist = t.history.slice().reverse().map(e => `<li>${e.t === 'study' ? '✅ Estudo' : e.t === 'review' ? '✨ Revisão' : '⏭️ Pulo'} · ${fmtDay(e.day)}${e.src ? ` · ${e.src === 'kindle' ? '📖 Kindle' : e.dev === 'mobile' ? '📱 Celular/tablet' : '💻 PC'}` : ''}${e.sec ? ` · ⏱️ ${fmtDur(e.sec)}` : e.min ? ` · ${e.min} min` : ''}${e.note ? `<span class="n">“${esc(e.note)}”</span>` : ''}</li>`).join('');
+  openModal(`<div class="head" style="background:${color}"><button class="x" data-act="close">✕</button>
+      <div class="meta">${esc(t.discName)} · ${esc(t.prof)}</div>
+      <h2>${esc(lessonLabel(t))} — ${esc(t.title)}</h2>
+      <div class="meta">Aula de ${fmtDay(t.date)} · ${stateTxt}</div></div>
+    <div class="body">${actions}
+      <div class="row"><button class="ghost" data-act="read">📄 Abrir fichamento</button></div>
+      ${hist ? `<h3>Histórico da casa</h3><ul class="hist">${hist}</ul>` : ''}</div>`);
+  $('modalCard').dataset.id = id;
+}
+function sessionBlock(t) {
+  const s = DATA.session, need = s.need * 60e3, el = Date.now() - s.start;
+  return `<h3>${s.kind === 'study' ? 'Estudando' : 'Revisando'} ${s.src === 'kindle' ? 'no 📖 Kindle' : isMobile() ? 'no 📱 celular/tablet' : 'no 💻 PC'}</h3>
+    <div class="timer ${el >= need ? 'over' : ''}" id="mTimer">${sessionClock(s)}</div>
+    <div class="note center" id="mTimerSub">${el >= need ? 'Mínimo cumprido — agora o relógio conta todo o tempo na casa' : 'Contagem regressiva do tempo mínimo'}</div>
+    <div class="row" style="justify-content:center"><button class="go" id="mDone" data-act="finish" ${el < need ? 'disabled' : ''}>${s.kind === 'study' ? '🏆 Estudei!' : '✨ Revisei!'}</button>
+    ${s.src === 'pc' ? '<button class="ghost" data-act="read">📄 Reabrir aula</button>' : ''}
+    <button class="ghost" data-act="cancel">Cancelar</button></div>
+    <p class="note center">O botão libera após ${s.need} minutos; o tempo total na casa fica registrado no histórico. Pode fechar esta janela: a contagem continua.</p>`;
+}
+const clock = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, x = sec % 60, p = n => String(n).padStart(2, '0'); return h ? `${h}:${p(m)}:${p(x)}` : `${p(m)}:${p(x)}`; };
+// regressivo até o mínimo; depois conta para cima a partir dele (15:01, 15:02...)
+const sessionClock = s => { const el = Date.now() - s.start, need = s.need * 60e3; return el < need ? clock(Math.ceil((need - el) / 1000)) : clock(Math.floor(el / 1000)); };
+const fmtDur = sec => sec >= 3600 ? `${Math.floor(sec / 3600)}h${String(Math.floor(sec / 60) % 60).padStart(2, '0')}` : `${Math.floor(sec / 60)} min ${String(sec % 60).padStart(2, '0')} s`;
+function laterModal(id, kind) {
+  const t = S.tiles.find(x => x.id === id);
+  const min = kind === 'study' ? CONFIG.studyMin : CONFIG.reviewMin, chars = kind === 'study' ? CONFIG.kindleChars : CONFIG.kindleReviewChars;
+  const y = D.add(today(), -1);
+  openModal(`<div class="head" style="background:#36424f"><button class="x" data-act="close">✕</button>
+      <div class="meta">📖 Registro do Kindle</div><h2>${esc(lessonLabel(t))} — ${esc(t.title)}</h2></div>
+    <div class="body">
+      <p>O Kindle não conversa com o PC, então a prova de estudo aqui é o seu <b>diário de bordo</b>: escreva com suas palavras as ideias-chave da aula.</p>
+      <label>Quando?</label><select id="kDay"><option value="${today()}">Hoje (${fmtDay(today())})</option><option value="${y}">Ontem (${fmtDay(y)})</option></select>
+      <label>Minutos estudados (mín. ${min})</label><input type="number" id="kMin" min="${min}" value="${min}">
+      <label>Diário de bordo — ${kind === 'study' ? '2 ou 3 ideias-chave' : 'o que você relembrou'} (mín. ${chars} caracteres)</label>
+      <textarea id="kNote" placeholder="Ex.: A cadeia de custódia garante... O STJ entende que..."></textarea>
+      <div class="counter no" id="kCount">0/${chars}</div>
+      <div class="row"><button class="go" id="kSave" data-act="saveLater" data-kind="${kind}" disabled>Registrar ${kind === 'study' ? 'estudo' : 'revisão'}</button>
+      <button class="ghost" data-act="back">Voltar</button></div></div>`);
+  $('modalCard').dataset.id = id;
+  const upd = () => { const n = $('kNote').value.trim().length, ok = n >= chars && +$('kMin').value >= min; $('kCount').textContent = `${n}/${chars}`; $('kCount').className = 'counter ' + (n >= chars ? 'okc' : 'no'); $('kSave').disabled = !ok; };
+  $('kNote').addEventListener('input', upd); $('kMin').addEventListener('input', upd);
+}
+function skipModal(id) {
+  const t = S.tiles.find(x => x.id === id);
+  openModal(`<div class="head" style="background:#7a0f1c"><button class="x" data-act="close">✕</button><div class="meta">Tem certeza?</div><h2>Pular ${esc(lessonLabel(t))}?</h2></div>
+    <div class="body"><div class="big">☠️</div>
+    <p>Pular custa <b>${CONFIG.skipCost}🪙 agora</b>. A casa fica <b>pendente</b>, rachada, e vai <b>drenar mais ${CONFIG.skipCost}🪙 a cada dia</b> até você estudá-la.</p>
+    <p>Se o saldo ficar negativo, você entra em dívida: pulos bloqueados, perda de XP diária e a tempestade toma conta do tabuleiro.</p>
+    <div class="row"><button class="danger" data-act="confirmSkip">Pular mesmo assim</button><button class="go" data-act="back">Melhor estudar</button></div></div>`);
+  $('modalCard').dataset.id = id;
+}
+function weekModal(w, celebrate) {
+  const list = S.tiles.filter(t => t.week === w), done = S.weeks[w];
+  const n = D.diff(D.monday(S.tiles[0].date), w) / 7 + 1;
+  const secOf = e => e.sec || (e.min || 0) * 60;
+  const rows = list.map(t => {
+    const st = t.history.find(e => e.t === 'study'), revs = t.history.filter(e => e.t === 'review');
+    return { t, study: st ? secOf(st) : 0, src: st?.src, nRev: revs.length, rev: revs.reduce((a, e) => a + secOf(e), 0) };
+  });
+  const tot = rows.reduce((a, r) => ({ study: a.study + r.study, rev: a.rev + r.rev }), { study: 0, rev: 0 });
+  if (celebrate) burst(160);
+  openModal(`<div class="head" style="background:linear-gradient(135deg,#1f2d4d,#8a6a1f)"><button class="x" data-act="close">✕</button>
+      <div class="meta">${D.br(w)} a ${D.br(D.add(w, 6))}</div><h2>Pauta da semana ${n}${done ? (done.perfect ? ' — acórdão unânime!' : ' — transitada em julgado!') : ''}</h2></div>
+    <div class="body"><div class="big">${done ? (done.perfect ? '🏛️' : '🔨') : '📜'}</div>
+    ${done ? `<p class="center"><b>+${CONFIG.weekBonus}🪙</b> · trânsito em julgado em ${fmtDay(done.day)}${done.perfect ? ' · nenhuma aula pulada!' : ''}</p>` : `<p class="center">Vença todas as casas desta semana para a pauta transitar em julgado (+${CONFIG.weekBonus}🪙). Sem nenhum pulo, acórdão unânime 🏛️.</p>`}
+    <h3>⏱️ Tempo por aula</h3>
+    <ul class="hist">${rows.map(r => `<li>${r.t.status === 'done' ? '✅' : r.t.status === 'pending' ? '☠️' : '⬜'} <b>${esc(lessonLabel(r.t))}</b> — ${esc(r.t.title)}
+      <span class="n" style="font-style:normal">${r.study ? `📘 estudo ${fmtDur(r.study)}${r.src ? ` ${r.src === 'kindle' ? '📖' : '💻'}` : ''}` : r.t.status === 'done' ? '📘 estudo sem tempo registrado' : '📘 ainda não estudada'}${r.nRev ? ` · ✨ ${r.nRev} revisão(ões) ${fmtDur(r.rev)}` : ''}${r.study + r.rev ? ` · <b>total ${fmtDur(r.study + r.rev)}</b>` : ''}</span></li>`).join('')}</ul>
+    <p class="center" style="font-size:1.1rem"><b>⏱️ Tempo total da fase: ${fmtDur(tot.study + tot.rev)}</b><br><span class="note">estudo ${fmtDur(tot.study)} · revisões ${fmtDur(tot.rev)}</span></p></div>`);
+}
+function showReportModal(r, auto) {
+  const li = a => a.map(x => `<li>${x}</li>`).join('');
+  openModal(`<div class="head" style="background:#2f8fe0"><button class="x" data-act="close">✕</button><div class="meta">Varredura das pastas${auto ? ' (mudanças detectadas)' : ''}</div><h2>${r.total} casa(s) no tabuleiro</h2></div>
+    <div class="body rep">
+    ${r.added.length ? `<h3>➕ Novas casas</h3><ul>${li(r.added.map(l => `${esc(lessonLabel(l))} — ${esc(l.title)} <span class="note">(${D.br(l.date)})</span>`))}</ul>` : ''}
+    ${r.removed.length ? `<h3>➖ Saíram do tabuleiro</h3><p class="note">O progresso delas fica guardado e volta se a aula voltar.</p><ul>${li(r.removed.map(l => `${esc(lessonLabel(l))} — ${esc(l.title)}`))}</ul>` : ''}
+    ${!r.added.length && !r.removed.length ? '<p>Nada mudou desde a última varredura.</p>' : ''}
+    ${r.problems?.length ? `<h3>⚠️ Pastas de aula que não entraram (${r.problems.length})</h3>
+      <ul>${li(r.problems.map(x => `<b>${esc(x.path)}</b><br><span class="note">${esc(x.reason)}</span>`))}</ul>` : ''}
+    <details><summary><b>🚫 Outras pastas ignoradas (${r.ignored.length})</b></summary>
+    ${r.ignored.length ? `<ul>${li(r.ignored.map(x => `<b>${esc(x.path)}</b><br><span class="note">${esc(x.reason)}</span>`))}</ul>` : '<p class="note">Nenhuma.</p>'}</details>
+    <div class="row"><button class="primary" data-act="close">Fechar</button></div></div>`);
+}
+function journalHTML(days) {
+  return days.map(d => `<div class="day">${fmtDay(d)}</div>${S.journal[d].map(it => `<div class="it ${it.kind}">${esc(it.text)}</div>`).join('')}`).join('');
+}
+function awayModal(days) {
+  const losses = days.filter(d => S.journal[d]?.some(it => it.kind !== 'gain'));
+  if (!losses.length) return;
+  openModal(`<div class="head" style="background:linear-gradient(135deg,#10141b,#7a0f1c)"><button class="x" data-act="close">✕</button><div class="meta">Relatório de ausência</div><h2>Enquanto você esteve fora…</h2></div>
+    <div class="body"><div class="big">⛈️</div><div class="journal">${journalHTML(losses)}</div>
+    <div class="row"><button class="go" data-act="close">Voltar ao jogo</button></div></div>`);
+}
+function menuModal() {
+  openModal(`<div class="head" style="background:#1d2433"><button class="x" data-act="close">✕</button><div class="meta">Menu</div><h2>Tabuleiro de Estudos</h2></div>
+    <div class="body">
+      <div class="row"><button data-act="rules">📜 Como jogar</button><button data-act="journal">📓 Diário do jogo</button></div>
+      <div class="row"><button data-act="export">💾 Exportar backup</button><button data-act="import">📥 Importar backup</button></div>
+      <div class="row">${IS_WEB
+        ? (account ? `<button class="ghost" data-act="logout">Sair da conta Microsoft</button>` : '<button data-act="connect">🔑 Entrar com a conta Microsoft</button>')
+        : `<button data-act="connect">📂 Escolher pasta 10º</button>${dirHandle ? '<button class="ghost" data-act="disconnect">Desconectar pasta</button>' : ''}`}</div>
+      <p class="note">${connected() ? `Progresso salvo no navegador e em <b>${PROGRESS_FILE}</b> ${IS_WEB ? `no seu OneDrive (${esc(account.username || '')})` : 'na pasta (sincroniza pelo OneDrive)'} — o mesmo arquivo para PC, celular e tablet.` : `Progresso salvo só neste navegador. ${IS_WEB ? 'Entre com a conta Microsoft' : 'Conecte a pasta 10º'} para salvar também no OneDrive.`}
+      Jogo iniciado em ${fmtDay(DATA.startDay)} · ${DATA.events.length} evento(s) registrados.</p>
+      <p class="note">Para testar outra data, abra com <code>?hoje=AAAA-MM-DD</code> no fim do endereço (usa um progresso separado).</p></div>`);
+}
+function rulesModal() {
+  const C = CONFIG;
+  openModal(`<div class="head" style="background:#7c5cff"><button class="x" data-act="close">✕</button><div class="meta">Regras</div><h2>Como jogar</h2></div>
+    <div class="body">
+    <p>🧑‍⚖️ <b>Carreira</b>: cada casa vencida dá uma peça do traje (${WARDROBE.length} no total) e sobe seu cargo, de Calouro(a) a Ministro(a). Depois da toga completa, cada casa vira uma estrela no traje.</p>
+    <p>🎯 <b>Cada casa é uma aula</b>, em ordem de data. Estude a casa do peão por pelo menos ${C.studyMin} min para vencê-la (+${C.xpStudy} XP).</p>
+    <p>💻 / 📖 <b>PC ou Kindle</b>: no PC o jogo abre a aula e conta o tempo. No Kindle, use a sessão ao vivo (só o relógio conta) ou registre depois com minutos e um diário de bordo (até o dia anterior).</p>
+    <p>✨ <b>Revisões</b> (mín. ${C.reviewMin} min) dão +${C.ptsReview}🪙 (+${C.ptsReviewFaded}🪙 se a casa estiver desbotando) e sobem o brilho da casa até o nível ${C.maxLevel} 👑. Cada gema na base é uma revisão (amarela = PC, azul = Kindle). Uma revisão pontuada por casa por dia.</p>
+    <p>🍂 <b>Desbotamento</b>: casa sem contato por ${C.fadeStart} dias começa a perder cor; em ${C.fadeFull} dias fica cinza.</p>
+    <p>⏭️ <b>Pular</b> custa ${C.skipCost}🪙 e a casa fica pendente ☠️, drenando ${C.skipCost}🪙 por dia até ser estudada. Saldo negativo = dívida: sem pulos e −${C.debtXp} XP/dia.</p>
+    <p>🔥 <b>Todo dia conta</b>: vença ao menos uma casa (ou, se estiver em dia, faça uma revisão). Dia parado consome o habeas corpus 🛡️ semanal; sem ele, zera a sequência e tira ${C.idleXp} XP. A tempestade ⛈️ cresce com dias parados, pendências e dívida.</p>
+    <p>🔨 <b>Semanas</b>: vencer todas as casas de uma semana faz a pauta transitar em julgado (+${C.weekBonus}🪙). Sem nenhum pulo, acórdão unânime 🏛️.</p>
+    <p>📂 <b>Fontes</b>: só contam aulas em <i>Disciplina/AAMMDD -Ann- Sigla/01_Produção/Ann ¦ AAMMDD ¦ FIC ¦ Sigla.html</i>. Pastas como "1ª Unidade" são ignoradas. Mudou algo? Clique em ⟳ Atualizar fontes.</p></div>`);
+}
+function journalModal() {
+  const days = Object.keys(S.journal).sort().reverse();
+  openModal(`<div class="head" style="background:#1fa463"><button class="x" data-act="close">✕</button><div class="meta">Tudo o que aconteceu</div><h2>Diário do jogo</h2></div>
+    <div class="body journal">${days.length ? journalHTML(days) : '<p>Nada ainda. Vença sua primeira casa!</p>'}</div>`);
+}
+
+// ---------- sessão (cronômetro) ----------
+function startSession(id, kind, src) {
+  const t = S.tiles.find(x => x.id === id);
+  if (src === 'pc') openLesson(t);
+  DATA.session = { id, kind, src, start: Date.now(), need: kind === 'study' ? CONFIG.studyMin : CONFIG.reviewMin };
+  save(); renderPill(); tileModal(id);
+}
+function finishSession() {
+  const s = DATA.session; if (!s) return;
+  const el = Date.now() - s.start; if (el < s.need * 60e3) return;
+  DATA.session = null; closeModal();
+  addEvent({ t: s.kind, id: s.id, src: s.src, dev: isMobile() ? 'mobile' : 'pc', min: Math.round(el / 6e4), sec: Math.round(el / 1000) });
+}
+function renderPill() {
+  const s = DATA.session, pill = $('pill');
+  if (!s) { pill.classList.remove('on'); return; }
+  const t = S.tiles.find(x => x.id === s.id);
+  if (!t) { DATA.session = null; save(); pill.classList.remove('on'); return; }
+  pill.classList.add('on');
+  $('pillL').textContent = `${s.kind === 'study' ? 'Estudando' : 'Revisando'} ${lessonLabel(t)} ${s.src === 'kindle' ? '📖' : '💻'}`;
+  tick();
+}
+function tick() {
+  const s = DATA.session; if (!s) return;
+  const left = s.need * 60e3 - (Date.now() - s.start);
+  $('pillT').textContent = sessionClock(s);
+  $('pillT').classList.toggle('over', left <= 0);
+  $('pillBtn').textContent = left <= 0 ? (s.kind === 'study' ? '🏆 Concluir' : '✨ Concluir') : 'Abrir';
+  if ($('mTimer')) {
+    $('mTimer').textContent = sessionClock(s); $('mTimer').classList.toggle('over', left <= 0); $('mDone').disabled = left > 0;
+    $('mTimerSub').textContent = left <= 0 ? 'Mínimo cumprido — agora o relógio conta todo o tempo na casa' : 'Contagem regressiva do tempo mínimo';
+  }
+}
+setInterval(tick, 1000);
+setInterval(() => { if (S && today() !== S._day) { render(); } }, 60e3);
+
+// ---------- efeitos ----------
+function toast(msg, bad) { const d = document.createElement('div'); d.className = 'toast' + (bad ? ' bad' : ''); d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 2300); }
+const conf = { parts: [], raf: 0 };
+function burst(n) {
+  const c = $('confetti'), ctx = c.getContext('2d'); c.width = innerWidth; c.height = innerHeight;
+  const cols = ['#ffd23f', '#e8504a', '#2f8fe0', '#22a865', '#9b59e0', '#fff'];
+  for (let i = 0; i < n; i++) conf.parts.push({ x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight / 3, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, r: Math.random() * 6 + 3, c: cols[i % cols.length], a: Math.random() * 6, life: 120 + Math.random() * 60 });
+  if (conf.raf) return;
+  const loop = () => {
+    ctx.clearRect(0, 0, c.width, c.height);
+    conf.parts = conf.parts.filter(p => p.life-- > 0);
+    for (const p of conf.parts) { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.a += .2; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore(); }
+    conf.raf = conf.parts.length ? requestAnimationFrame(loop) : 0;
+  };
+  conf.raf = requestAnimationFrame(loop);
+}
+const rain = { drops: [], raf: 0, level: 0, nextFlash: 0 };
+function weather() {
+  rain.level = S.storm;
+  const c = $('rain');
+  if (rain.level < 2) { cancelAnimationFrame(rain.raf); rain.raf = 0; c.getContext('2d').clearRect(0, 0, c.width, c.height); return; }
+  if (rain.raf) return;
+  const ctx = c.getContext('2d');
+  const loop = t => {
+    if (c.width !== innerWidth) { c.width = innerWidth; c.height = innerHeight; }
+    const want = rain.level === 3 ? 260 : 120;
+    while (rain.drops.length < want) rain.drops.push({ x: Math.random() * c.width, y: Math.random() * c.height, l: 10 + Math.random() * 14, v: 9 + Math.random() * 8 });
+    ctx.clearRect(0, 0, c.width, c.height); ctx.strokeStyle = 'rgba(200,215,235,.45)'; ctx.lineWidth = 1.2; ctx.beginPath();
+    for (const d of rain.drops) { d.y += d.v; d.x -= d.v * .25; if (d.y > c.height) { d.y = -20; d.x = Math.random() * c.width * 1.2; } ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + d.l * .25, d.y - d.l); }
+    ctx.stroke();
+    if (t > rain.nextFlash) {
+      if (rain.nextFlash) { const f = $('flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
+      rain.nextFlash = t + (rain.level === 3 ? 4000 + Math.random() * 5000 : 12000 + Math.random() * 9000);
+    }
+    rain.raf = requestAnimationFrame(loop);
+  };
+  rain.raf = requestAnimationFrame(loop);
+}
+
+// ---------- cliques ----------
+document.addEventListener('click', e => {
+  const open = e.target.closest('[data-open]');
+  if (open) { e.preventDefault(); tileModal(open.dataset.open); return; }
+  const tileEl = e.target.closest('.tile'); if (tileEl) return tileModal(tileEl.dataset.id);
+  const chestEl = e.target.closest('.chest[data-week]'); if (chestEl) return weekModal(chestEl.dataset.week);
+  if (e.target.id === 'modal') return closeModal();
+  if (e.target.id === 'btnConnect') return IS_WEB ? cloudLogin() : connectFolder();
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const id = $('modalCard').dataset.id;
+  switch (a.dataset.act) {
+    case 'close': closeModal(); break;
+    case 'back': tileModal(id); break;
+    case 'start': startSession(id, a.dataset.kind, a.dataset.src); break;
+    case 'read': openLesson(S.tiles.find(x => x.id === id)); break;
+    case 'logout': closeModal(); MSAL?.logoutRedirect({ account }); break;
+    case 'later': laterModal(id, a.dataset.kind); break;
+    case 'saveLater': {
+      const entry = { t: a.dataset.kind, id, src: 'kindle', manual: true, day: $('kDay').value, min: +$('kMin').value, note: $('kNote').value.trim() };
+      closeModal();
+      addEvent(entry);
+      break;
+    }
+    case 'finish': finishSession(); break;
+    case 'cancel': DATA.session = null; save(); renderPill(); tileModal(id); break;
+    case 'skip': skipModal(id); break;
+    case 'confirmSkip': closeModal(); addEvent({ t: 'skip', id }); break;
+    case 'rules': rulesModal(); break;
+    case 'wardrobe': wardrobeModal(); break;
+    case 'journal': journalModal(); break;
+    case 'export': exportData(); break;
+    case 'import': $('importInput').click(); break;
+    case 'connect': closeModal(); IS_WEB ? cloudLogin() : connectFolder(); break;
+    case 'disconnect': dirHandle = null; idbDel('dir'); closeModal(); render(); break;
+  }
+});
+$('btnSync').onclick = refreshSources;
+$('btnMenu').onclick = menuModal;
+$('pillBtn').onclick = () => { if (DATA.session) tileModal(DATA.session.id); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); $('reader').classList.remove('on'); } });
+$('readerX').onclick = () => { $('reader').classList.remove('on'); $('readerF').srcdoc = ''; };
+$('dirInput').onchange = async e => { if (e.target.files.length) await applyScan(listFromFileList(e.target.files), true); e.target.value = ''; };
+$('importInput').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.events)) throw new Error('arquivo sem eventos'); DATA = mergeData(DATA, d); save(); render(); toast('Backup importado'); }
+  catch (err) { toast('Backup inválido: ' + err.message, true); }
+  e.target.value = '';
+};
+function exportData() {
+  const blob = new Blob([JSON.stringify(DATA, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `tabuleiro-backup-${today()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => S && renderBoard(), 150); });
+
+// ---------- início ----------
+(async function init() {
+  if (!DATA.startDay) DATA.startDay = today();
+  render();
+  if (IS_WEB) {
+    try { await cloudInit(); } catch (e) { toast('Falha no login: ' + e.message, true); }
+    if (account) { try { await syncFromRemote(false); } catch (e) { toast('Falha ao ler o OneDrive: ' + e.message, true); } }
+    render();
+  }
+  const h = IS_WEB ? null : await idbGet('dir');
+  if (h) {
+    dirHandle = h;
+    try { if ((await h.queryPermission({ mode: 'readwrite' })) === 'granted') await syncFromRemote(false); else dirHandle = null, window._pendingHandle = h; }
+    catch (e) { dirHandle = null; }
+    render();
+  }
+  if (!connected() && !DATA.lessons?.length && !window._pendingHandle) {
+    openModal(`<div class="head" style="background:linear-gradient(135deg,#7c5cff,#2f8fe0)"><div class="meta">Bem-vindo(a)!</div><h2>⚖️ Tabuleiro de Estudos</h2></div>
+      <div class="body"><p>Cada aula fichada vira uma casa no caminho do Fórum. A cada casa vencida seu personagem ganha uma peça do traje — da camiseta de calouro à toga completa. Avance todo dia, revise para fazer as casas brilharem e fuja da tempestade.</p>
+      <p>${IS_WEB ? 'Para começar, entre com sua conta Microsoft: o jogo lê as aulas e o progresso direto do seu OneDrive — o mesmo do PC.' : 'Para começar, selecione a pasta <b>10º</b> (a mesma onde este arquivo está). O jogo vai ler as aulas e salvar seu progresso lá.'}</p>
+      <div class="row"><button class="primary" data-act="connect">${IS_WEB ? '🔑 Entrar com a conta Microsoft' : '📂 Selecionar pasta 10º'}</button><button class="ghost" data-act="rules">Como jogar</button></div></div>`);
+  } else if (DATA.lastSeen && DATA.lastSeen < today()) {
+    const days = Object.keys(S.journal).filter(d => d >= DATA.lastSeen && d < today()).sort();
+    awayModal(days);
+  }
+  DATA.lastSeen = today(); save();
+})();
+// reconectar com um clique quando a permissão expirou
+document.addEventListener('click', async e => {
+  if (e.target.id !== 'btnConnect' || !window._pendingHandle) return;
+  e.stopImmediatePropagation();
+  const h = window._pendingHandle;
+  if ((await h.requestPermission({ mode: 'readwrite' })) === 'granted') { dirHandle = h; window._pendingHandle = null; await syncFromRemote(false); }
+}, true);
+</script>
+</body>
+</html>
