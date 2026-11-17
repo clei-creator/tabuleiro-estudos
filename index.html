@@ -106,6 +106,11 @@ button.ghost{background:transparent;color:var(--ink);box-shadow:none;border:1px 
   box-shadow:0 0 0 2px rgba(215,38,61,.25),0 6px 18px rgba(122,15,28,.35);animation:throb 1.8s ease-in-out infinite;letter-spacing:.01em}
 .warn.soft{background:linear-gradient(90deg,#8a5a00,#d08b00);animation:none}
 .warn.dark{background:linear-gradient(90deg,#10141b,#3a1020)}
+.warn.mist{background:linear-gradient(90deg,#3d4f6b,#6a7f9c);animation:none}
+.journal .it.info{border-color:#8fa3c8;color:var(--ink-soft)}
+.anchor{border:1px solid var(--line);background:var(--field);border-radius:12px;padding:10px 12px;margin:8px 0}
+.anchor h4{margin:0 0 4px;font-family:var(--font-title);font-size:1.02rem}
+.anchor p{margin:4px 0;font-size:.9rem}
 @keyframes throb{0%,100%{transform:scale(1)}50%{transform:scale(1.008);box-shadow:0 0 0 4px rgba(215,38,61,.35),0 6px 22px rgba(122,15,28,.5)}}
 
 main{position:relative;z-index:2;display:grid;grid-template-columns:1fr;gap:12px;padding:12px 16px 120px}
@@ -289,6 +294,12 @@ const CONFIG = {
   ptsReview: 5, ptsReviewFaded: 10,
   idleXp: 15, debtXp: 10, weekBonus: 30,
   fadeStart: 7, fadeFull: 21, maxLevel: 4,
+  // 5 Âncoras (notebook "Aprendizagem Acelerada - Neurociência do TDAH")
+  recallMin: 3, recallChars: 60,          // Arranco da Gaveta: resgate na folha em branco
+  hookChars: 20, ptsHook: 5,              // Velcro de Conceitos: gancho na vida real
+  nevoaMin: 1, nevoaMax: 3, ptsNevoa: 10, // Respiro da Névoa: revisão ideal entre 1 e 3 dias depois
+  ptsCombo: 10,                           // Embaralhamento: 2+ disciplinas no mesmo dia
+  mirrorMin: 3, ptsMirror: 5,             // Espelho Cego: 3 min explicando em voz alta
   colors: ['#e8504a', '#2f8fe0', '#f29f05', '#22a865', '#9b59e0', '#e0559b', '#16a3a3'],
 };
 const RE = {
@@ -360,7 +371,7 @@ function replay(data, lessons, today) {
   const C = CONFIG;
   const byId = Object.fromEntries(lessons.map(l => [l.id, l]));
   const T = {};
-  const tile = id => T[id] || (T[id] = { status: 'locked', reviews: [], history: [], level: 0, lastTouch: null, skipDay: null, studiedDay: null, src: null, everSkipped: false });
+  const tile = id => T[id] || (T[id] = { status: 'locked', reviews: [], gems: [], history: [], level: 0, lastTouch: null, skipDay: null, studiedDay: null, src: null, everSkipped: false, hook: false, flag: false });
   const s = { studySec: 0, points: C.startPts, xp: 0, streak: 0, best: 0, idleRun: 0, shields: {}, weeks: {}, journal: {}, srcCount: { pc: 0, kindle: 0 }, todayAdvanced: false };
   const weekLessons = {};
   for (const l of lessons) (weekLessons[D.monday(l.date)] ||= []).push(l.id);
@@ -372,23 +383,33 @@ function replay(data, lessons, today) {
   let i = 0;
   for (let d = first; d <= today; d = D.add(d, 1)) {
     let advanced = false;
+    const dayDiscs = new Set(); // Embaralhamento: disciplinas trabalhadas no dia
     while (i < evs.length && evs[i].day === d) {
-      const e = evs[i++], t = tile(e.id), lab = lessonLabel(byId[e.id], e.id);
+      const e = evs[i++], t = tile(e.id), L = byId[e.id], lab = lessonLabel(L, e.id);
       if (e.t !== 'skip') s.studySec += e.sec || (e.min || 0) * 60;
       if (e.t === 'study') {
         if (t.status === 'done') continue;
         const wasPending = t.status === 'pending';
         Object.assign(t, { status: 'done', studiedDay: d, lastTouch: d, src: e.src, skipDay: null });
         t.history.push(e); s.xp += C.xpStudy; s.srcCount[e.src] = (s.srcCount[e.src] || 0) + 1; advanced = true;
-        note(d, 'gain', `${lab} vencida ${e.src === 'kindle' ? '📖' : '💻'}${e.sec ? ` em ${Math.round(e.sec / 60)} min` : e.min ? ` em ${e.min} min` : ''}${wasPending ? ' (pendência quitada)' : ''} · +${C.xpStudy} XP`);
+        if (L) dayDiscs.add(L.discN);
+        note(d, 'gain', `${lab} vencida ${e.src === 'kindle' ? '📖' : '💻'}${e.sec ? ` em ${Math.round(e.sec / 60)} min` : e.min ? ` em ${e.min} min` : ''}${e.recall ? ' · 🗄️ resgate feito' : ''}${wasPending ? ' (pendência quitada)' : ''} · +${C.xpStudy} XP`);
+        if ((e.hook || '').trim().length >= C.hookChars) { t.hook = true; s.points += C.ptsHook; note(d, 'gain', `🔗 Velcro: ${lab} amarrada à vida real · +${C.ptsHook}🪙`); }
       } else if (e.t === 'review') {
         if (t.status !== 'done') continue;
         t.history.push(e); s.srcCount[e.src] = (s.srcCount[e.src] || 0) + 1;
+        const age = D.diff(t.lastTouch, d), mirror = e.mode === 'espelho';
         if (!t.reviews.some(r => r.day === d)) {
-          const faded = D.diff(t.lastTouch, d) >= C.fadeStart;
-          const p = faded ? C.ptsReviewFaded : C.ptsReview;
-          s.points += p; s.xp += C.xpReview; t.level = Math.min(C.maxLevel, t.level + 1);
-          note(d, 'gain', `Revisão de ${lab} ${e.src === 'kindle' ? '📖' : '💻'}${faded ? ' (resgatou do desbotamento)' : ''} · +${p}🪙 +${C.xpReview} XP`);
+          if (age < C.nevoaMin) note(d, 'info', `Revisão de ${lab} no mesmo dia: registrada, sem pontos — deixe a matéria entrar na névoa (${C.nevoaMin} a ${C.nevoaMax} dias)`);
+          else if (mirror && e.mirror === 'falhou') { t.flag = true; note(d, 'info', `🪞 Espelho Cego em ${lab}: travou ou usou jargão — casa marcada para reforço 🔧`); }
+          else {
+            const nevoa = age <= C.nevoaMax, faded = age >= C.fadeStart;
+            const p = (nevoa ? C.ptsNevoa : faded ? C.ptsReviewFaded : C.ptsReview) + (mirror ? C.ptsMirror : 0);
+            s.points += p; s.xp += C.xpReview; t.level = Math.min(C.maxLevel, t.level + 1); t.gems.push(e);
+            if (mirror) t.flag = false;
+            if (L) dayDiscs.add(L.discN);
+            note(d, 'gain', `${mirror ? '🪞 Espelho limpo' : 'Revisão'} de ${lab} ${e.src === 'kindle' ? '📖' : '💻'}${nevoa ? ' · 🌫️ resgate na névoa' : faded ? ' (resgatou do desbotamento)' : ''} · +${p}🪙 +${C.xpReview} XP`);
+          }
         }
         t.reviews.push(e); t.lastTouch = d;
         if (!available()) advanced = true;
@@ -398,6 +419,8 @@ function replay(data, lessons, today) {
         note(d, 'loss', `Pulou ${lab} · −${C.skipCost}🪙`);
       }
     }
+    if (dayDiscs.size >= 2) { s.points += C.ptsCombo; note(d, 'gain', `🃏 Embaralhamento: ${dayDiscs.size} disciplinas no mesmo dia · +${C.ptsCombo}🪙`); }
+    if (d === today) s.todayDiscs = dayDiscs.size;
     for (const [w, list] of Object.entries(weekLessons)) {
       if (s.weeks[w] || !list.every(id => T[id]?.status === 'done')) continue;
       const perfect = list.every(id => !T[id].everSkipped);
@@ -422,8 +445,10 @@ function replay(data, lessons, today) {
   }
   const tiles = lessons.map(l => {
     const t = T[l.id] || tile(l.id);
-    const fade = t.status === 'done' ? clamp((D.diff(t.lastTouch, today) - C.fadeStart) / (C.fadeFull - C.fadeStart), 0, 1) : 0;
-    return { ...l, ...t, fade, week: D.monday(l.date) };
+    const age = t.status === 'done' ? D.diff(t.lastTouch, today) : null;
+    const fade = t.status === 'done' ? clamp((age - C.fadeStart) / (C.fadeFull - C.fadeStart), 0, 1) : 0;
+    const nevoa = t.status === 'done' && age >= C.nevoaMin && age <= C.nevoaMax;
+    return { ...l, ...t, age, fade, nevoa, week: D.monday(l.date) };
   });
   const pending = tiles.filter(t => t.status === 'pending').length;
   let score = Math.min(s.idleRun, 3) + pending + (s.points < 0 ? 2 : 0);
@@ -436,6 +461,9 @@ function replay(data, lessons, today) {
     shieldAvailable: !s.shields[D.monday(today)],
     storm: score === 0 ? 0 : score <= 1 ? 1 : score <= 3 ? 2 : 3,
     fading: tiles.filter(t => t.fade > 0).length,
+    nevoaCount: tiles.filter(t => t.nevoa).length,
+    flagged: tiles.filter(t => t.status === 'done' && t.flag).length,
+    todayDiscs: s.todayDiscs || 0,
     conquered: Object.values(T).filter(t => t.status === 'done').length,
   };
 }
@@ -736,7 +764,9 @@ function renderToday() {
     msg = `<span class="late">⏳ Ainda sem avanço hoje${SIM ? '' : ` — faltam ${h}h${String(m).padStart(2, '0')} para o dia contar como perdido`}${S.shieldAvailable ? ' (o habeas corpus 🛡️ ainda te protege)' : ''}.</span>`;
   }
   const cur = S.tiles[S.pawn];
-  $('today').innerHTML = `<span>📅 Hoje, ${D.wd(t)} ${D.br(t)}</span><span>${msg}</span>
+  const combo = S.todayDiscs >= 2 ? '<span>🃏 Embaralhamento do dia feito!</span>'
+    : S.todayDiscs === 1 ? `<span>🃏 Embaralhe: vença ou revise uma casa de <b>outra disciplina</b> hoje (+${CONFIG.ptsCombo}🪙)</span>` : '';
+  $('today').innerHTML = `<span>📅 Hoje, ${D.wd(t)} ${D.br(t)}</span><span>${msg}</span>${combo}
     ${cur ? `<span>🎯 Próxima casa: <a href="#" data-open="${esc(cur.id)}">${esc(lessonLabel(cur))} — ${esc(cur.title)}</a></span>` : (S.tiles.length ? '<span>🏁 Você está em dia com todas as aulas! Revise para manter o brilho.</span>' : '')}
     ${!connected() ? `<button class="primary" id="btnConnect">${IS_WEB ? '🔑 Entrar com a conta Microsoft' : `📂 ${DATA.lessons?.length ? 'Reconectar pasta' : 'Conectar pasta 10º'}`}</button>` : ''}`;
 }
@@ -748,6 +778,8 @@ function renderWarn() {
   if (S.points < 0) w.push(['dark', `💀 Dívida de ${-S.points}🪙. Pulos bloqueados e você perde ${CONFIG.debtXp} XP por dia até sair do vermelho.`]);
   if (S.idleRun > 0 && !S.todayAdvanced) w.push(['', `⛈️ ${S.idleRun} dia(s) seguido(s) sem avanço. A tempestade cresce sobre o tabuleiro.`]);
   if (S.fading) w.push(['soft', `🍂 ${S.fading} casa(s) desbotando — revise para recuperar o brilho (+${CONFIG.ptsReviewFaded}🪙 cada).`]);
+  if (S.nevoaCount) w.push(['mist', `🌫️ ${S.nevoaCount} casa(s) na névoa — é o momento ideal do resgate: revise agora (+${CONFIG.ptsNevoa}🪙 cada).`]);
+  if (S.flagged) w.push(['mist', `🔧 ${S.flagged} casa(s) marcada(s) para reforço pelo Espelho Cego — corrija a lacuna e refaça o teste.`]);
   $('warn').innerHTML = w.map(([c, t]) => `<div class="warn ${c}">${t}</div>`).join('');
 }
 function renderLegend() {
@@ -839,13 +871,15 @@ function tileSVG(t, x, y, s, isCur) {
     extra += `<rect x="${-h}" y="${-h}" width="${s}" height="${s}" rx="16" fill="url(#hl)" opacity="${0.4 + t.level * 0.15}"/>`;
     if (t.level >= 3 && t.fade < 0.3) extra += `<rect class="shimmer" x="${-h}" y="${-h}" width="${s}" height="${s}" rx="16" fill="#fff"/>`;
     if (t.level >= CONFIG.maxLevel && t.fade < 0.3) extra += `<text x="0" y="${-h - 6}" font-size="${s * 0.26}">👑</text>`;
-    const g = t.reviews.length, shown = Math.min(g, 8);
+    const shown = Math.min(t.gems.length, 8);
     for (let k = 0; k < shown; k++) {
-      const gx = -h + (k + 0.5) * (s / 8);
-      extra += `<circle class="gem" cx="${gx}" cy="${h - 2}" r="${s * 0.045}" fill="${t.reviews[k].src === 'kindle' ? '#7fd1ff' : '#ffd23f'}"/>`;
+      const gx = -h + (k + 0.5) * (s / 8), gm = t.gems[k];
+      extra += `<circle class="gem" cx="${gx}" cy="${h - 2}" r="${s * 0.045}" fill="${gm.mode === 'espelho' ? '#c58cff' : gm.src === 'kindle' ? '#7fd1ff' : '#ffd23f'}"/>`;
     }
     extra += `<text x="${h - 12}" y="${-h + 18}" font-size="${s * 0.17}">${t.src === 'kindle' ? '📖' : '💻'}</text>`;
-    if (t.fade > 0) extra += `<text x="${-h + 12}" y="${-h + 18}" font-size="${s * 0.17}">🍂</text>`;
+    const badge = t.flag ? '🔧' : t.fade > 0 ? '🍂' : t.nevoa ? '🌫️' : '';
+    if (badge) extra += `<text x="${-h + 12}" y="${-h + 18}" font-size="${s * 0.17}">${badge}</text>`;
+    if (t.hook) extra += `<text x="${h - 12}" y="${h - 14}" font-size="${s * 0.14}">🔗</text>`;
   }
   if (st === 'pending') {
     extra += `<path class="crack" d="M${-h + 8},${-h + 14} l${s * .18},${s * .14} l-${s * .06},${s * .16} l${s * .2},${s * .1}"/><path class="crack" d="M${h - 10},${-h + 10} l-${s * .15},${s * .2} l${s * .08},${s * .1}"/>
@@ -947,6 +981,8 @@ function tileModal(id) {
   const st = t.status === 'locked' ? (isCur ? 'current' : 'locked') : t.status;
   const sess = DATA.session;
   const mySess = sess && sess.id === id;
+  if (mySess && sess.stage === 'recall') return recallModal();
+  if (mySess && sess.stage === 'mirror') return mirrorModal();
   const color = st === 'pending' ? '#7a0f1c' : discColor(t.discN);
   const stateTxt = { locked: '🔒 À frente do peão', current: '🎯 Casa atual', done: `✅ Vencida · brilho ${t.level}/${CONFIG.maxLevel}${t.fade > 0 ? ' · 🍂 desbotando' : ''}`, pending: '☠️ Pendente — drenando pontos todo dia' }[st];
   let actions = '';
@@ -957,16 +993,22 @@ function tileModal(id) {
       <div class="row"><button class="go" data-act="start" data-kind="study" data-src="pc">${isMobile() ? '📱' : '💻'} Estudar nesta tela</button>
       <button class="kindle" data-act="start" data-kind="study" data-src="kindle">📖 Sessão Kindle ao vivo</button>
       <button class="ghost" data-act="later" data-kind="study">📖 Já estudei no Kindle</button></div>
-      <p class="note">${isMobile() ? '📱' : '💻'} abre o fichamento aqui e conta o tempo. 📖 ao vivo conta o tempo sem abrir nada aqui. "Já estudei" registra depois, com minutos e um diário de bordo.</p>`;
+      <p class="note">${isMobile() ? '📱' : '💻'} abre o fichamento aqui e conta o tempo. 📖 ao vivo conta o tempo sem abrir nada aqui. "Já estudei" registra depois, com minutos e um diário de bordo.</p>
+      <p class="note">🧠 Dica: estude em blocos curtos (~10 min). Ao fim do cronômetro vem o <b>Arranco da Gaveta</b>: ${CONFIG.recallMin} min resgatando de memória, sem olhar a aula.</p>`;
     if (st === 'current') actions += `<h3>Pular</h3><div class="row"><button class="danger" data-act="skip" ${S.points < CONFIG.skipCost ? 'disabled' : ''}>⏭️ Pular (−${CONFIG.skipCost}🪙 agora e por dia)</button></div>${S.points < CONFIG.skipCost ? '<p class="note">Honorários insuficientes. Revise aulas anteriores para ganhar 🪙.</p>' : ''}`;
   } else if (st === 'done') {
-    actions = `<h3>Revisar (mín. ${CONFIG.reviewMin} min) · +${t.fade > 0 || D.diff(t.lastTouch, today()) >= CONFIG.fadeStart ? CONFIG.ptsReviewFaded : CONFIG.ptsReview}🪙</h3>
-      <div class="row"><button class="go" data-act="start" data-kind="review" data-src="pc">${isMobile() ? '📱' : '💻'} Revisar nesta tela</button>
-      <button class="kindle" data-act="start" data-kind="review" data-src="kindle">📖 Revisão Kindle ao vivo</button>
+    const C = CONFIG, revToday = t.reviews.some(r => r.day === today());
+    const value = revToday ? 'já revisada hoje' : t.age < C.nevoaMin ? 'hoje não pontua — espere a névoa'
+      : t.nevoa ? `🌫️ na névoa: +${C.ptsNevoa}🪙` : t.age >= C.fadeStart ? `🍂 +${C.ptsReviewFaded}🪙` : `+${C.ptsReview}🪙`;
+    actions = `<h3>Revisar · ${value}</h3>
+      <div class="row"><button class="go" data-act="start" data-kind="review" data-src="pc">${isMobile() ? '📱' : '💻'} Revisar nesta tela (${C.reviewMin} min)</button>
+      <button class="primary" data-act="start" data-kind="review" data-src="pc" data-mode="espelho">🪞 Espelho Cego (${C.mirrorMin} min, +${C.ptsMirror}🪙)</button></div>
+      <div class="row"><button class="kindle" data-act="start" data-kind="review" data-src="kindle">📖 Revisão Kindle ao vivo</button>
       <button class="ghost" data-act="later" data-kind="review">📖 Já revisei no Kindle</button></div>
-      ${t.reviews.some(r => r.day === today()) ? '<p class="note">Você já revisou esta casa hoje: novas revisões ficam no histórico, mas não pontuam.</p>' : ''}`;
+      <p class="note">🪞 Espelho Cego: sem olhar nada, explique a aula em voz alta, como para alguém de 12 anos, sem jargão.${t.flag ? ' <b>🔧 Esta casa está marcada para reforço.</b>' : ''}</p>
+      ${revToday ? '<p class="note">Você já revisou esta casa hoje: novas revisões ficam no histórico, mas não pontuam.</p>' : t.age < C.nevoaMin ? `<p class="note">🌫️ Respiro da Névoa: revisar no mesmo dia não consolida. O resgate rende mais entre ${C.nevoaMin} e ${C.nevoaMax} dias depois.</p>` : ''}`;
   } else actions = `<p class="note">Esta casa ainda está à frente. Vença a casa atual — ou pule-a — para chegar aqui. Pode espiar o conteúdo, mas não conta.</p>`;
-  const hist = t.history.slice().reverse().map(e => `<li>${e.t === 'study' ? '✅ Estudo' : e.t === 'review' ? '✨ Revisão' : '⏭️ Pulo'} · ${fmtDay(e.day)}${e.src ? ` · ${e.src === 'kindle' ? '📖 Kindle' : e.dev === 'mobile' ? '📱 Celular/tablet' : '💻 PC'}` : ''}${e.sec ? ` · ⏱️ ${fmtDur(e.sec)}` : e.min ? ` · ${e.min} min` : ''}${e.note ? `<span class="n">“${esc(e.note)}”</span>` : ''}</li>`).join('');
+  const hist = t.history.slice().reverse().map(e => `<li>${e.t === 'study' ? '✅ Estudo' : e.t === 'review' ? (e.mode === 'espelho' ? `🪞 Espelho Cego ${e.mirror === 'falhou' ? '(travou)' : '(limpo)'}` : '✨ Revisão') : '⏭️ Pulo'} · ${fmtDay(e.day)}${e.src ? ` · ${e.src === 'kindle' ? '📖 Kindle' : e.dev === 'mobile' ? '📱 Celular/tablet' : '💻 PC'}` : ''}${e.sec ? ` · ⏱️ ${fmtDur(e.sec)}` : e.min ? ` · ${e.min} min` : ''}${e.note ? `<span class="n">“${esc(e.note)}”</span>` : ''}${e.recall ? `<span class="n">🗄️ Resgate: “${esc(e.recall)}”</span>` : ''}${e.hook ? `<span class="n">🔗 Gancho: “${esc(e.hook)}”</span>` : ''}</li>`).join('');
   openModal(`<div class="head" style="background:${color}"><button class="x" data-act="close">✕</button>
       <div class="meta">${esc(t.discName)} · ${esc(t.prof)}</div>
       <h2>${esc(lessonLabel(t))} — ${esc(t.title)}</h2>
@@ -978,11 +1020,11 @@ function tileModal(id) {
 }
 function sessionBlock(t) {
   const s = DATA.session, need = s.need * 60e3, el = Date.now() - s.start;
-  return `<h3>${s.kind === 'study' ? 'Estudando' : 'Revisando'} ${s.src === 'kindle' ? 'no 📖 Kindle' : isMobile() ? 'no 📱 celular/tablet' : 'no 💻 PC'}</h3>
+  return `<h3>${s.mode === 'espelho' ? '🪞 Espelho Cego — explique em voz alta, sem olhar nada' : `${s.kind === 'study' ? 'Estudando' : 'Revisando'} ${s.src === 'kindle' ? 'no 📖 Kindle' : isMobile() ? 'no 📱 celular/tablet' : 'no 💻 PC'}`}</h3>
     <div class="timer ${el >= need ? 'over' : ''}" id="mTimer">${sessionClock(s)}</div>
     <div class="note center" id="mTimerSub">${el >= need ? 'Mínimo cumprido — agora o relógio conta todo o tempo na casa' : 'Contagem regressiva do tempo mínimo'}</div>
     <div class="row" style="justify-content:center"><button class="go" id="mDone" data-act="finish" ${el < need ? 'disabled' : ''}>${s.kind === 'study' ? '🏆 Estudei!' : '✨ Revisei!'}</button>
-    ${s.src === 'pc' ? '<button class="ghost" data-act="read">📄 Reabrir aula</button>' : ''}
+    ${s.src === 'pc' && s.mode !== 'espelho' ? '<button class="ghost" data-act="read">📄 Reabrir aula</button>' : ''}
     <button class="ghost" data-act="cancel">Cancelar</button></div>
     <p class="note center">O botão libera após ${s.need} minutos; o tempo total na casa fica registrado no histórico. Pode fechar esta janela: a contagem continua.</p>`;
 }
@@ -1003,6 +1045,7 @@ function laterModal(id, kind) {
       <label>Diário de bordo — ${kind === 'study' ? '2 ou 3 ideias-chave' : 'o que você relembrou'} (mín. ${chars} caracteres)</label>
       <textarea id="kNote" placeholder="Ex.: A cadeia de custódia garante... O STJ entende que..."></textarea>
       <div class="counter no" id="kCount">0/${chars}</div>
+      ${kind === 'study' ? `<label>🔗 Velcro — onde na sua vida/trabalho você já viu isso? (opcional, +${CONFIG.ptsHook}🪙)</label><textarea id="kHook" style="min-height:70px" placeholder="Ex.: lembra o caso do cliente que…"></textarea>` : ''}
       <div class="row"><button class="go" id="kSave" data-act="saveLater" data-kind="${kind}" disabled>Registrar ${kind === 'study' ? 'estudo' : 'revisão'}</button>
       <button class="ghost" data-act="back">Voltar</button></div></div>`);
   $('modalCard').dataset.id = id;
@@ -1063,7 +1106,7 @@ function awayModal(days) {
 function menuModal() {
   openModal(`<div class="head" style="background:#1d2433"><button class="x" data-act="close">✕</button><div class="meta">Menu</div><h2>Tabuleiro de Estudos</h2></div>
     <div class="body">
-      <div class="row"><button data-act="rules">📜 Como jogar</button><button data-act="journal">📓 Diário do jogo</button></div>
+      <div class="row"><button data-act="rules">📜 Como jogar</button><button data-act="anchors">🧠 5 Âncoras</button><button data-act="journal">📓 Diário do jogo</button></div>
       <div class="row"><button data-act="export">💾 Exportar backup</button><button data-act="import">📥 Importar backup</button></div>
       <div class="row">${IS_WEB
         ? (account ? `<button class="ghost" data-act="logout">Sair da conta Microsoft</button>` : '<button data-act="connect">🔑 Entrar com a conta Microsoft</button>')
@@ -1079,12 +1122,36 @@ function rulesModal() {
     <p>🧑‍⚖️ <b>Carreira</b>: cada casa vencida dá uma peça do traje (${WARDROBE.length} no total) e sobe seu cargo, de Calouro(a) a Ministro(a). Depois da toga completa, cada casa vira uma estrela no traje.</p>
     <p>🎯 <b>Cada casa é uma aula</b>, em ordem de data. Estude a casa do peão por pelo menos ${C.studyMin} min para vencê-la (+${C.xpStudy} XP).</p>
     <p>💻 / 📖 <b>PC ou Kindle</b>: no PC o jogo abre a aula e conta o tempo. No Kindle, use a sessão ao vivo (só o relógio conta) ou registre depois com minutos e um diário de bordo (até o dia anterior).</p>
-    <p>✨ <b>Revisões</b> (mín. ${C.reviewMin} min) dão +${C.ptsReview}🪙 (+${C.ptsReviewFaded}🪙 se a casa estiver desbotando) e sobem o brilho da casa até o nível ${C.maxLevel} 👑. Cada gema na base é uma revisão (amarela = PC, azul = Kindle). Uma revisão pontuada por casa por dia.</p>
+    <p>✨ <b>Revisões</b> (mín. ${C.reviewMin} min) dão +${C.ptsNevoa}🪙 entre ${C.nevoaMin} e ${C.nevoaMax} dias depois (🌫️ névoa), +${C.ptsReview}🪙 depois disso e +${C.ptsReviewFaded}🪙 se a casa estiver desbotando; no mesmo dia não pontuam. Elas sobem o brilho da casa até o nível ${C.maxLevel} 👑. Cada gema na base é uma revisão pontuada (amarela = tela, azul = Kindle, lilás = Espelho Cego).</p>
+    <p>🧠 <b>5 Âncoras</b> (Gaveta, Névoa, Embaralhamento, Espelho Cego e Velcro) viraram mecânicas do jogo: veja ☰ Menu → 🧠 5 Âncoras.</p>
     <p>🍂 <b>Desbotamento</b>: casa sem contato por ${C.fadeStart} dias começa a perder cor; em ${C.fadeFull} dias fica cinza.</p>
     <p>⏭️ <b>Pular</b> custa ${C.skipCost}🪙 e a casa fica pendente ☠️, drenando ${C.skipCost}🪙 por dia até ser estudada. Saldo negativo = dívida: sem pulos e −${C.debtXp} XP/dia.</p>
     <p>🔥 <b>Todo dia conta</b>: vença ao menos uma casa (ou, se estiver em dia, faça uma revisão). Dia parado consome o habeas corpus 🛡️ semanal; sem ele, zera a sequência e tira ${C.idleXp} XP. A tempestade ⛈️ cresce com dias parados, pendências e dívida.</p>
     <p>🔨 <b>Semanas</b>: vencer todas as casas de uma semana faz a pauta transitar em julgado (+${C.weekBonus}🪙). Sem nenhum pulo, acórdão unânime 🏛️.</p>
     <p>📂 <b>Fontes</b>: só contam aulas em <i>Disciplina/AAMMDD -Ann- Sigla/01_Produção/Ann ¦ AAMMDD ¦ FIC ¦ Sigla.html</i>. Pastas como "1ª Unidade" são ignoradas. Mudou algo? Clique em ⟳ Atualizar fontes.</p></div>`);
+}
+function anchorsModal() {
+  const C = CONFIG;
+  const a = (ico, name, how, why, game) => `<div class="anchor"><h4>${ico} ${name}</h4><p><b>Como:</b> ${how}</p><p><b>Por que funciona:</b> ${why}</p><p class="note"><b>No jogo:</b> ${game}</p></div>`;
+  openModal(`<div class="head" style="background:linear-gradient(135deg,#1f2d4d,#7c5cff)"><button class="x" data-act="close">✕</button>
+      <div class="meta">Do notebook "Aprendizagem Acelerada - Neurociência do TDAH"</div><h2>🧠 As 5 Âncoras de Retenção</h2></div>
+    <div class="body">
+    ${a('🗄️', 'Arranco da Gaveta', 'estude um bloco curto (~10 min), feche a aula e, numa folha em branco, escreva de memória tudo o que lembra por 3 a 5 min. Só depois confira o que faltou.',
+      'o esforço de resgatar sem pistas ativa o hipocampo e desfaz a "ilusão de fluência" de quem só relê ou grifa.',
+      `ao fim do cronômetro de estudo, ${C.recallMin} min de resgate obrigatório antes de registrar a casa.`)}
+    ${a('🌫️', 'Respiro da Névoa', 'não revise no mesmo dia. Deixe a matéria esfriar até ficar nebulosa e só então faça o resgate.',
+      'quanto mais difícil lembrar, mais forte a consolidação; revisar logo em seguida rende pouco.',
+      `revisão no mesmo dia não pontua; entre ${C.nevoaMin} e ${C.nevoaMax} dias depois a casa mostra 🌫️ e vale +${C.ptsNevoa}🪙.`)}
+    ${a('🃏', 'Embaralhamento de Cartas', 'em vez de horas numa única matéria, alterne temas na mesma sessão e termine com problemas misturados.',
+      'o cérebro com TDAH se habitua à monotonia; alternar obriga a decidir qual conceito usar, o que aumenta a retenção.',
+      `trabalhar casas de 2 ou mais disciplinas no mesmo dia dá +${C.ptsCombo}🪙.`)}
+    ${a('🪞', 'Teste do Espelho Cego', 'sem anotações, explique o conceito em voz alta por 3 min, como para alguém de 12 anos, sem jargão. Travou? Volte ao material e repita.',
+      'o jargão esconde buracos de entendimento; explicar com palavras simples exige compreensão real.',
+      `novo modo de revisão de ${C.mirrorMin} min: explicação limpa dá +${C.ptsMirror}🪙 extra; se travar, a casa fica 🔧 para reforço.`)}
+    ${a('🔗', 'Velcro de Conceitos', 'não decore dados soltos: amarre cada conceito a algo que você já viveu ("onde no trabalho já vi isso?").',
+      'a memória de trabalho do TDAH é curta; ligar o novo ao que já está consolidado não gasta espaço extra (chunking).',
+      `campo de "gancho na vida real" no resgate e no registro do Kindle: +${C.ptsHook}🪙 e selo 🔗 na casa.`)}
+    </div>`);
 }
 function journalModal() {
   const days = Object.keys(S.journal).sort().reverse();
@@ -1093,17 +1160,61 @@ function journalModal() {
 }
 
 // ---------- sessão (cronômetro) ----------
-function startSession(id, kind, src) {
+function startSession(id, kind, src, mode) {
   const t = S.tiles.find(x => x.id === id);
-  if (src === 'pc') openLesson(t);
-  DATA.session = { id, kind, src, start: Date.now(), need: kind === 'study' ? CONFIG.studyMin : CONFIG.reviewMin };
+  const mirror = mode === 'espelho';
+  if (src === 'pc' && !mirror) openLesson(t);
+  DATA.session = { id, kind, src, mode: mode || null, start: Date.now(), need: mirror ? CONFIG.mirrorMin : kind === 'study' ? CONFIG.studyMin : CONFIG.reviewMin };
   save(); renderPill(); tileModal(id);
 }
 function finishSession() {
   const s = DATA.session; if (!s) return;
   const el = Date.now() - s.start; if (el < s.need * 60e3) return;
+  const base = { t: s.kind, id: s.id, src: s.src, dev: isMobile() ? 'mobile' : 'pc', min: Math.round(el / 6e4), sec: Math.round(el / 1000) };
+  // estudo → Arranco da Gaveta; Espelho Cego → autoavaliação
+  if (s.kind === 'study' || s.mode === 'espelho') {
+    $('reader').classList.remove('on');
+    Object.assign(s, { stage: s.kind === 'study' ? 'recall' : 'mirror', base, recallStart: Date.now(), draft: '', hookDraft: '' });
+    save(); renderPill();
+    return s.kind === 'study' ? recallModal() : mirrorModal();
+  }
   DATA.session = null; closeModal();
-  addEvent({ t: s.kind, id: s.id, src: s.src, dev: isMobile() ? 'mobile' : 'pc', min: Math.round(el / 6e4), sec: Math.round(el / 1000) });
+  addEvent(base);
+}
+function recallModal() {
+  const s = DATA.session, t = S.tiles.find(x => x.id === s.id), C = CONFIG;
+  openModal(`<div class="head" style="background:linear-gradient(135deg,#1f2d4d,#4a3d12)"><button class="x" data-act="close">✕</button>
+      <div class="meta">🗄️ Arranco da Gaveta · ${esc(lessonLabel(t))}</div><h2>Feche a aula. Folha em branco.</h2></div>
+    <div class="body">
+      <p>Sem olhar o fichamento, escreva <b>tudo de que se lembra</b>: tópicos, setas, conceitos centrais. Travou? Resista a espiar e insista mais um pouco — o esforço é o que grava.</p>
+      <div class="timer" id="rTimer">${clock(C.recallMin * 60)}</div>
+      <textarea id="rText" placeholder="O que eu lembro da aula…">${esc(s.draft || '')}</textarea>
+      <div class="counter no" id="rCount">0/${C.recallChars}</div>
+      <label>🔗 Velcro de Conceitos — onde na sua vida ou trabalho você já viu isso acontecer? (opcional, +${C.ptsHook}🪙)</label>
+      <textarea id="rHook" style="min-height:70px" placeholder="Ex.: isso é igual ao que aconteceu quando…">${esc(s.hookDraft || '')}</textarea>
+      <div class="row"><button class="go" id="rSave" data-act="saveRecall" disabled>🏆 Registrar estudo</button>
+      <button class="ghost" id="rCheck" data-act="read" disabled>📄 Conferir na aula (depois do resgate)</button></div>
+      <p class="note">O registro libera após ${C.recallMin} min de resgate e ${C.recallChars} caracteres. Depois, confira na aula o que faltou.</p></div>`);
+  $('modalCard').dataset.id = s.id;
+  const keep = () => { s.draft = $('rText').value; s.hookDraft = $('rHook').value; saveLocal(); tick(); };
+  $('rText').addEventListener('input', keep); $('rHook').addEventListener('input', keep);
+  tick();
+}
+function mirrorModal() {
+  const s = DATA.session, t = S.tiles.find(x => x.id === s.id);
+  openModal(`<div class="head" style="background:linear-gradient(135deg,#4b2a7a,#1f2d4d)"><button class="x" data-act="close">✕</button>
+      <div class="meta">🪞 Espelho Cego · ${esc(lessonLabel(t))}</div><h2>Como foi a explicação?</h2></div>
+    <div class="body"><div class="big">🪞</div>
+      <p class="center">Seja honesto: você explicou a aula para "alguém de 12 anos", com palavras simples, <b>sem travar e sem se esconder atrás de jargão</b>?</p>
+      <div class="row"><button class="go" data-act="mirrorOk">😀 Expliquei sem travar (+${CONFIG.ptsMirror}🪙 extra)</button>
+      <button class="danger" data-act="mirrorFail">😬 Travei ou usei jargão</button></div>
+      <p class="note center">Travou? A casa fica marcada 🔧 para reforço. Volte ao fichamento, corrija a lacuna e refaça o Espelho Cego.</p></div>`);
+  $('modalCard').dataset.id = s.id;
+}
+function closeSessionWith(extra) {
+  const s = DATA.session; if (!s?.base) return;
+  DATA.session = null; closeModal();
+  addEvent({ ...s.base, ...extra });
 }
 function renderPill() {
   const s = DATA.session, pill = $('pill');
@@ -1111,11 +1222,24 @@ function renderPill() {
   const t = S.tiles.find(x => x.id === s.id);
   if (!t) { DATA.session = null; save(); pill.classList.remove('on'); return; }
   pill.classList.add('on');
-  $('pillL').textContent = `${s.kind === 'study' ? 'Estudando' : 'Revisando'} ${lessonLabel(t)} ${s.src === 'kindle' ? '📖' : '💻'}`;
+  $('pillL').textContent = s.stage === 'recall' ? `🗄️ Resgate de ${lessonLabel(t)}` : s.stage === 'mirror' ? `🪞 Avalie o Espelho de ${lessonLabel(t)}`
+    : `${s.mode === 'espelho' ? '🪞 Espelho Cego' : s.kind === 'study' ? 'Estudando' : 'Revisando'} ${lessonLabel(t)} ${s.src === 'kindle' ? '📖' : '💻'}`;
   tick();
 }
 function tick() {
   const s = DATA.session; if (!s) return;
+  if (s.stage === 'recall') {
+    const rleft = CONFIG.recallMin * 60e3 - (Date.now() - s.recallStart), txt = (s.draft || '').trim().length;
+    $('pillT').textContent = rleft > 0 ? clock(Math.ceil(rleft / 1000)) : '✔'; $('pillT').classList.toggle('over', rleft <= 0);
+    $('pillBtn').textContent = 'Abrir';
+    if ($('rTimer')) {
+      $('rTimer').textContent = rleft > 0 ? clock(Math.ceil(rleft / 1000)) : '✔ pronto!'; $('rTimer').classList.toggle('over', rleft <= 0);
+      $('rCount').textContent = `${txt}/${CONFIG.recallChars}`; $('rCount').className = 'counter ' + (txt >= CONFIG.recallChars ? 'okc' : 'no');
+      $('rSave').disabled = rleft > 0 || txt < CONFIG.recallChars; $('rCheck').disabled = rleft > 0;
+    }
+    return;
+  }
+  if (s.stage === 'mirror') { $('pillT').textContent = '🪞'; $('pillBtn').textContent = 'Avaliar'; return; }
   const left = s.need * 60e3 - (Date.now() - s.start);
   $('pillT').textContent = sessionClock(s);
   $('pillT').classList.toggle('over', left <= 0);
@@ -1180,12 +1304,21 @@ document.addEventListener('click', e => {
   switch (a.dataset.act) {
     case 'close': closeModal(); break;
     case 'back': tileModal(id); break;
-    case 'start': startSession(id, a.dataset.kind, a.dataset.src); break;
+    case 'start': startSession(id, a.dataset.kind, a.dataset.src, a.dataset.mode); break;
+    case 'saveRecall': {
+      const hook = $('rHook').value.trim();
+      closeSessionWith({ recall: $('rText').value.trim(), recallSec: Math.round((Date.now() - DATA.session.recallStart) / 1000), ...(hook ? { hook } : {}) });
+      break;
+    }
+    case 'mirrorOk': closeSessionWith({ mode: 'espelho', mirror: 'ok' }); break;
+    case 'mirrorFail': closeSessionWith({ mode: 'espelho', mirror: 'falhou' }); toast('🔧 Casa marcada para reforço', true); break;
+    case 'anchors': anchorsModal(); break;
     case 'read': openLesson(S.tiles.find(x => x.id === id)); break;
     case 'logout': closeModal(); MSAL?.logoutRedirect({ account }); break;
     case 'later': laterModal(id, a.dataset.kind); break;
     case 'saveLater': {
       const entry = { t: a.dataset.kind, id, src: 'kindle', manual: true, day: $('kDay').value, min: +$('kMin').value, note: $('kNote').value.trim() };
+      if ($('kHook')?.value.trim()) entry.hook = $('kHook').value.trim();
       closeModal();
       addEvent(entry);
       break;
@@ -1224,7 +1357,7 @@ $('btnTheme').onclick = () => {
 };
 themeMQ.addEventListener('change', applyTheme);
 applyTheme();
-$('pillBtn').onclick = () => { if (DATA.session) tileModal(DATA.session.id); };
+$('pillBtn').onclick = () => { if (DATA.session) tileModal(DATA.session.id); };  // tileModal desvia para resgate/espelho
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); $('reader').classList.remove('on'); } });
 $('readerX').onclick = () => { $('reader').classList.remove('on'); $('readerF').srcdoc = ''; };
 $('dirInput').onchange = async e => { if (e.target.files.length) await applyScan(listFromFileList(e.target.files), true); e.target.value = ''; };
