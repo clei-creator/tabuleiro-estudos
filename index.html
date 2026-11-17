@@ -81,6 +81,7 @@ button.icon{width:44px;padding:0}
 .wrap{max-width:1440px;margin:0 auto;padding:22px 24px 120px;position:relative;z-index:2}
 .grid{display:grid;grid-template-columns:290px minmax(0,1fr) 320px;gap:22px;align-items:start}
 #colL,#colR{display:flex;flex-direction:column;gap:14px}
+@media (min-width:1100px){ #colL,#colR{position:sticky;top:calc(var(--hdrH,62px) + 16px);max-height:calc(100vh - var(--hdrH,62px) - 32px);overflow-y:auto;scrollbar-width:thin;padding-bottom:4px} }
 @media (max-width:1099px){ .grid{grid-template-columns:320px minmax(0,1fr);grid-template-areas:"r c" "l c"} #colR{grid-area:r} #colL{grid-area:l} #colC{grid-area:c} }
 @media (max-width:760px){ .wrap{padding:12px 12px 140px} .grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"r" "c" "l";gap:14px} }
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
@@ -175,11 +176,11 @@ html[data-theme="dark"] .fig{filter:drop-shadow(0 0 1.5px rgba(244,239,228,.85))
 .rchip button svg.i{width:13px;height:13px}
 #rDone{min-height:36px;height:36px;border:0;background:#C9A75A;color:#1B2740;display:none}
 #rDone.on{display:inline-flex}
-.scrollbar{position:relative;height:6px;background:#2E3B5A}
+.scrollbar{position:relative;height:20px;background:#2E3B5A}
 .scrollbar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#B08D3C,#E3C77F);transition:width .12s linear}
 .scrollbar.full i{background:linear-gradient(90deg,#2F6B4F,#9FC9A8)}
-.scrolllbl{position:absolute;right:10px;top:8px;font-size:12px;font-weight:700;color:#1B2740;background:#9FC9A8;border-radius:999px;padding:4px 10px;opacity:0;transform:translateY(-4px);transition:.25s;pointer-events:none;z-index:2}
-.scrollbar.full .scrolllbl{opacity:1;transform:none}
+.scrolllbl{position:absolute;right:10px;top:0;height:20px;display:flex;align-items:center;font-size:12px;font-weight:700;color:#F4EFE4;font-variant-numeric:tabular-nums;pointer-events:none;z-index:2;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.scrollbar.full .scrolllbl{color:#0E2A1C;text-shadow:none}
 #readerF{flex:1;border:0;width:100%;background:#fff}
 @media (max-width:640px){ .rtitle{font-size:13px} #rDone .lbl{display:none} }
 
@@ -284,7 +285,7 @@ label.f{font-weight:600;font-size:13.5px;display:block;margin:12px 0 4px}
       <span class="rchip" id="rChip"><span class="dot"></span><span class="t" id="rTime">00:00</span><button id="rPause" aria-label="Pausar"></button></span>
       <button id="rDone"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span class="lbl">Estudei</span></button>
     </div>
-    <div class="scrollbar" id="rScroll"><i></i><span class="scrolllbl">Exercícios concluídos</span></div>
+    <div class="scrollbar" id="rScroll" role="progressbar" aria-label="Leitura da aula" aria-valuemin="0" aria-valuemax="100"><i></i><span class="scrolllbl" id="rPct">0%</span></div>
   </div>
   <iframe id="readerF" title="Fichamento" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
 </div>
@@ -850,6 +851,7 @@ const isPlayable = t => t.status === 'pending' || (t.status === 'locked' && (t =
 
 // ---------- render ----------
 function render() {
+  document.documentElement.style.setProperty('--hdrH', document.querySelector('.hdr').offsetHeight + 'px');
   S = replay(DATA, DATA.lessons || [], today());
   S._day = today();
   document.body.className = 'storm-' + S.storm;
@@ -1321,10 +1323,11 @@ function watchScroll() {
   if (!w || !doc || !doc.body) return;
   // links do fichamento (leis, julgados) abrem em outra aba, sem tirar o jogo da tela
   doc.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && !a.getAttribute('href').startsWith('#')) { e.preventDefault(); window.open(a.href, '_blank', 'noopener'); } });
-  const upd = () => { const d = doc.documentElement, h = Math.max(d.scrollHeight, doc.body.scrollHeight) - w.innerHeight; setScroll(h <= 2 ? 1 : (w.scrollY || d.scrollTop) / h); };
-  w.addEventListener('scroll', upd, { passive: true }); w.addEventListener('resize', upd); upd();
+  const upd = byUser => { const d = doc.documentElement, h = Math.max(d.scrollHeight, doc.body.scrollHeight) - w.innerHeight; setScroll(h <= 2 ? 1 : (w.scrollY || d.scrollTop) / h, byUser === true); };
+  w.addEventListener('scroll', () => upd(true), { passive: true }); w.addEventListener('resize', upd); upd();
 }
-$('readerF').addEventListener('load', () => { if (readerLesson) watchScroll(); });
+// só observa a página da aula de verdade (não o aviso de "carregando")
+$('readerF').addEventListener('load', () => { if (readerLesson && $('readerF').dataset.real === '1') watchScroll(); });
 async function lessonHTML(t) {
   if (IS_WEB) return (await graph(itemPath(t.path) + '/content')).text();
   if (!dirHandle) return null;
@@ -1339,11 +1342,12 @@ async function openLesson(t) {
   $('readerT').textContent = `${lessonLabel(t)} — ${t.title}`;
   setScroll(0);
   $('reader').classList.add('on');
+  f.dataset.real = '0';
   f.srcdoc = '<p style="font:16px sans-serif;padding:24px;color:#555">Carregando o fichamento…</p>';
   try {
     const html = await lessonHTML(t);
     if (html == null) { $('reader').classList.remove('on'); window.open(lessonUrl(t), '_blank', 'noopener'); return; }
-    f.srcdoc = html;
+    f.dataset.real = '1'; f.srcdoc = html;
   } catch (e) { f.srcdoc = `<p style="font:16px sans-serif;padding:24px">Não consegui abrir: ${esc(e.message)}</p>`; }
   const s = DATA.session;
   if (s && s.id === t.id && !s.stage && s.src !== 'kindle' && !s.runStart && s.autoPaused) resumeSession();
@@ -1355,10 +1359,13 @@ function closeReader() {
   if (s && !s.stage && s.src !== 'kindle' && s.runStart) pauseSession(true);
   renderPill();
 }
-function setScroll(p) {
-  const bar = $('rScroll'); bar.querySelector('i').style.width = (p * 100).toFixed(1) + '%';
-  const full = p >= 0.985; bar.classList.toggle('full', full);
-  if (full && !scrollDone) { scrollDone = true; const r = bar.getBoundingClientRect(); burstAt(r.right - 30, r.bottom, 90); }
+function setScroll(p, byUser) {
+  const bar = $('rScroll'), full = p >= 0.985, pct = full ? 100 : Math.floor(p * 100);
+  bar.querySelector('i').style.width = pct + '%'; bar.classList.toggle('full', full);
+  bar.setAttribute('aria-valuenow', pct);
+  $('rPct').textContent = full ? '100% · Exercícios concluídos' : pct + '%';
+  // confete só quando o leitor rola até o fim de verdade
+  if (full && byUser && !scrollDone) { scrollDone = true; burstTop(160); }
 }
 function renderReaderChip() {
   const s = DATA.session, on = s && readerLesson && s.id === readerLesson.id && !s.stage;
@@ -1505,6 +1512,11 @@ function burstAt(x, y, n, up = false) {
   conf.raf = requestAnimationFrame(loop);
 }
 const burst = n => burstAt(innerWidth / 2, innerHeight / 3, n, true);
+// chuva de confete saindo de toda a borda de cima da tela
+function burstTop(n) {
+  for (let k = 0; k < 8; k++) burstAt((k + .5) * innerWidth / 8, -10, Math.ceil(n / 8));
+  conf.parts.forEach(p => { if (p.y < 0) { p.x = Math.random() * innerWidth; p.y = -Math.random() * 120; p.vx = (Math.random() - .5) * 3; p.vy = Math.random() * 2 + 1; } });
+}
 const rain = { drops: [], raf: 0, level: 0, nextFlash: 0 };
 function weather() {
   rain.level = S.storm;
