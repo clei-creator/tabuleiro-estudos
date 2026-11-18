@@ -190,7 +190,7 @@ html[data-theme="dark"] .fig{filter:drop-shadow(0 0 1.5px rgba(244,239,228,.85))
 .sheet{background:var(--bg);color:var(--ink);border-radius:20px;max-width:620px;width:100%;max-height:calc(100dvh - 32px);overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.4);animation:pop .22s ease-out}
 @keyframes pop{from{transform:translateY(12px);opacity:0}}
 .sheet .head{padding:18px 20px;background:var(--navy);color:var(--navy-ink);position:relative;border-radius:20px 20px 0 0}
-.sheet .head .meta{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:600}
+.sheet .head .meta{font-size:11px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:600;margin-right:44px}
 .sheet .head h2{margin:6px 40px 0 0;font-family:var(--serif);font-size:26px;line-height:1.15;font-weight:700}
 .sheet .head .sub{font-size:13px;color:var(--navy-soft);margin-top:4px}
 .sheet .x{position:absolute;right:12px;top:12px;width:40px;min-height:40px;padding:0;border:0;background:rgba(255,255,255,.12);color:#fff}
@@ -219,6 +219,47 @@ label.f{font-weight:600;font-size:13.5px;display:block;margin:12px 0 4px}
 .guide .g-t{font-weight:600;margin-top:6px} .guide .g-t:first-child{margin-top:0}
 .guide .g-k{font-size:12.5px;padding-left:16px}
 html[data-theme="dark"] .guide{color:#8791A6}
+.sheet.wide{max-width:1060px}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;margin:4px 0 10px}
+.seg button{flex:1;min-height:40px;border:0;border-radius:8px;background:transparent;color:var(--ink-soft);font-size:13.5px;box-shadow:none}
+.seg button.on{background:var(--navy);color:#F4EFE4;font-weight:600}
+.tp{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.tp.ok{border-color:#9FBFA5}
+.tp-h{display:flex;gap:8px;align-items:baseline;color:#8A8270;font-weight:600;font-size:13.5px;user-select:none}
+.tp-h .st{margin-left:auto;font-size:11px;font-weight:600;white-space:nowrap;color:#A59C86}
+.tp-k{font-size:12px;color:#A59C86;margin:2px 0 6px;user-select:none}
+.tp textarea{min-height:64px;margin-top:6px}
+html[data-theme="dark"] .tp-h,html[data-theme="dark"] .tp-k{color:#8791A6}
+.prog{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:6px 0 10px}
+.prog i{display:block;height:100%;background:var(--gold)}
+.paused{background:var(--surface-2);border:1px solid var(--gold);border-radius:14px;padding:12px 14px;margin:8px 0}
+.paused h3{margin-top:0}
+.cad{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px}
+.cad .ls{display:flex;flex-direction:column;gap:6px}
+.cad .ls button{display:flex;gap:10px;align-items:center;justify-content:flex-start;text-align:left;min-height:54px;font-weight:400;width:100%}
+.cad .ls button.on{border:2px solid var(--navy)}
+.cad .ls b{display:block;font-size:14px}
+.cad .ls small{display:block;font-size:12px;color:var(--ink-soft)}
+.cad .ls .k{margin-left:auto;font-family:var(--serif);font-size:20px;font-weight:700}
+.cad .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 10px}
+.chips button{min-height:36px;border-radius:999px;font-size:13px;padding:0 14px}
+.chips button.on{background:var(--navy);color:#F4EFE4;border-color:var(--navy);font-weight:600}
+.chips label{display:flex;align-items:center;gap:8px;font-size:13px;margin-left:auto;min-height:40px}
+.chips input{width:18px;height:18px;accent-color:#1B2740}
+html[data-theme="dark"] .chips button.on,html[data-theme="dark"] .seg button.on{background:var(--gold);color:#1B2740;border-color:var(--gold)}
+html[data-theme="dark"] .cad .ls button.on{border-color:var(--gold)}
+.cmp{display:grid;grid-template-columns:190px minmax(0,1fr) minmax(0,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:6px;font-size:13px;background:var(--surface)}
+.cmp.one{grid-template-columns:190px minmax(0,1fr)}
+.cmp > div{padding:8px 10px;border-left:1px solid var(--line);white-space:pre-wrap;line-height:1.45;min-width:0;overflow-wrap:anywhere}
+.cmp > div:first-child{border-left:0;background:var(--surface-2);font-weight:600;color:var(--ink-soft)}
+.cmp .vz{color:#B9B09A;font-style:italic}
+.cmp.hd{border:0;background:transparent;margin-bottom:2px}
+.cmp.hd > div{background:transparent;border:0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600;color:var(--ink-soft);padding:2px 10px}
+.evo{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.evo > div{flex:1 1 240px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;background:var(--surface)}
+.evo .hk{border-style:dashed;border-color:var(--gold)}
+@media (max-width:760px){ .cad{grid-template-columns:minmax(0,1fr)} .cad .ls{flex-direction:row;overflow-x:auto;padding-bottom:4px} .cad .ls button{flex:0 0 200px} .cmp,.cmp.one{grid-template-columns:minmax(0,1fr)} .cmp > div{border-left:0;border-top:1px solid var(--line)} .cmp > div:first-child{border-top:0} .cmp > div[data-l]:before{content:attr(data-l);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:600;color:var(--ink-soft);margin-bottom:2px} .cmp.hd{display:none} .chips label{margin-left:0} }
 .anchor{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;margin:8px 0}
 .anchor h4{margin:0 0 4px;font-family:var(--serif);font-size:20px}
 .anchor p{margin:4px 0;font-size:13.5px}
@@ -252,7 +293,7 @@ html[data-theme="dark"] .guide{color:#8791A6}
 <header class="hdr">
   <div class="hdr-row">
     <div class="brand"><svg class="i" style="width:26px;height:26px;color:var(--gold)" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></svg><span class="t">Tabuleiro de Estudos</span></div>
-    <nav class="tabs" aria-label="Visão"><button id="tabHoje" class="on">Hoje</button><button id="tabMapa">Mapa geral</button></nav>
+    <nav class="tabs" aria-label="Visão"><button id="tabHoje" class="on">Hoje</button><button id="tabMapa">Mapa geral</button><button id="tabCad">Caderno</button></nav>
     <div class="hstats" id="hstats"></div>
     <div class="hact">
       <button id="btnSync" title="Varre de novo as pastas das disciplinas"><svg class="i" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg><span class="lbl">Atualizar fontes</span></button>
@@ -1121,6 +1162,7 @@ function tileModal(id) {
   let actions = '';
   if (mySess) actions = sessionBlock(t);
   else if (sess) actions = `<p class="note">Há uma sessão em andamento em outra casa. Termine-a ou cancele antes.</p><div class="row"><button data-act="openSession">Ir para a sessão</button></div>`;
+  else if (DATA.paused?.[id] && t.status !== 'done') actions = pausedCard(DATA.paused[id]);
   else if (t.off && t.status !== 'done') actions = `<p class="note">Disciplina concluída: esta aula foi dispensada e não conta mais para o fim da pauta.</p>`;
   else if (playable) {
     actions = `<h3>Estudar esta aula · mín. ${C.studyMin} min</h3>
@@ -1133,21 +1175,22 @@ function tileModal(id) {
     const value = revToday ? 'já revisada hoje' : t.age < C.nevoaMin ? 'hoje não pontua · espere a névoa'
       : t.nevoa ? `na névoa: +${C.ptsNevoa}` : t.age >= C.fadeStart ? `desbotando: +${C.ptsReviewFaded}` : `+${C.ptsReview}`;
     const round = roundsOf(t) + 1;
-    actions = `<h3>Exercícios da aula · rodada de tarefas ${round}</h3>
+    const pz = DATA.paused?.[id];
+    actions = pz ? pausedCard(pz) : `<h3>Exercícios da aula · rodada de tarefas ${round}</h3>
       <div class="row"><button class="gold" data-act="drill">${ic('book')}Gaveta + Velcro: papel em branco · ${C.recallMin} min</button></div>
-      <p class="note">Escreva de memória tudo o que lembra da aula (com os tópicos do fichamento como dica, se quiser) e amarre a um caso da vida real. Conta como revisão · ${value}.</p>
-      <h3>Revisões</h3>
+      <p class="note">Escreva de memória tudo o que lembra da aula, na folha em branco total ou por tópicos (um campo por tópico do fichamento), e amarre a um caso da vida real. Conta como revisão · ${value}.</p>`;
+    actions += `<h3>Revisões</h3>
       <div class="row"><button class="primary" data-act="start" data-kind="review" data-src="pc">Reler o fichamento · ${C.reviewMin} min</button><button data-act="start" data-kind="review" data-src="pc" data-mode="espelho">Espelho Cego · ${C.mirrorMin} min · +${C.ptsMirror}</button></div>
       <div class="row"><button data-act="start" data-kind="review" data-src="kindle">Revisão Kindle ao vivo</button><button class="ghost" data-act="later" data-kind="review">Já revisei no Kindle</button></div>
       <p class="note">Espelho Cego: sem olhar nada, explique a aula em voz alta, como para alguém de 12 anos, sem jargão.${t.flag ? ' <b>Esta casa está em reforço.</b>' : ''}${revToday ? ' Você já revisou esta casa hoje: novas revisões ficam no histórico, mas não pontuam.' : t.age < C.nevoaMin ? ` Revisar no mesmo dia não consolida: o resgate rende mais entre ${C.nevoaMin} e ${C.nevoaMax} dias depois.` : ''}</p>`;
   } else actions = `<p class="note">Esta casa ainda está à frente. Vença a casa atual${focusDisc() ? '' : ', use o foco do dia nesta disciplina'} ou pule a atual para chegar aqui. Pode ler o conteúdo, mas não conta.</p>`;
   let rn = 0;
   const roundNo = new Map(t.history.filter(e => e.recall).map(e => [e, ++rn]));
-  const hist = t.history.slice().reverse().map(e => `<li><b>${e.t === 'study' ? 'Estudo' : e.t === 'review' ? (e.mode === 'espelho' ? `Espelho Cego ${e.mirror === 'falhou' ? '(travou)' : '(limpo)'}` : e.mode === 'gaveta' ? 'Exercícios' : 'Revisão') : 'Pulo'}${roundNo.has(e) ? ` · rodada de tarefas ${roundNo.get(e)}` : ''}</b> · ${fmtDay(e.day)}${e.src ? ` · ${e.src === 'kindle' ? 'Kindle' : e.dev === 'mobile' ? 'celular/tablet' : 'PC'}` : ''}${e.sec ? ` · ${fmtDur(e.sec)}` : e.min ? ` · ${e.min} min` : ''}${e.note ? `<span class="n">“${esc(e.note)}”</span>` : ''}${e.recall ? `<span class="n">Resgate: “${esc(e.recall)}”</span>` : ''}${e.hook ? `<span class="n">Gancho: “${esc(e.hook)}”</span>` : ''}</li>`).join('');
+  const hist = t.history.slice().reverse().map(e => `<li><b>${e.t === 'study' ? 'Estudo' : e.t === 'review' ? (e.mode === 'espelho' ? `Espelho Cego ${e.mirror === 'falhou' ? '(travou)' : '(limpo)'}` : e.mode === 'gaveta' ? 'Exercícios' : 'Revisão') : 'Pulo'}${roundNo.has(e) ? ` · rodada de tarefas ${roundNo.get(e)}` : ''}</b> · ${fmtDay(e.day)}${e.src ? ` · ${e.src === 'kindle' ? 'Kindle' : e.dev === 'mobile' ? 'celular/tablet' : 'PC'}` : ''}${e.sec ? ` · ${fmtDur(e.sec)}` : e.min ? ` · ${e.min} min` : ''}${e.note ? `<span class="n">“${esc(e.note)}”</span>` : ''}${e.answers ? `<span class="n">Resgate por tópicos: ${topicsDone(e)} de ${e.answers.length} desenvolvidos</span>` : e.recall ? `<span class="n">Resgate: “${esc(e.recall)}”</span>` : ''}${e.hook ? `<span class="n">Gancho: “${esc(e.hook)}”</span>` : ''}</li>`).join('');
   openModal(`${head(`${esc(t.discName)} · ${esc(t.prof)}`, `${esc(lessonLabel(t))} — ${esc(t.title)}`, `Aula de ${fmtDay(t.date)} · ${stateText(t)}`)}
     <div class="body">${actions}
       ${t.status === 'done' ? '' : `<div class="row"><button class="ghost" data-act="read">${ic('book')}Só ler o fichamento (não conta tempo)</button></div>`}
-      ${hist ? `<h3>Histórico da casa</h3><ul class="hist">${hist}</ul>` : ''}</div>`);
+      ${hist ? `<h3>Histórico da casa</h3>${roundsOf(t) || DATA.paused?.[id] ? '<div class="row"><button class="ghost" data-act="caderno">Abrir o caderno de rodadas desta aula</button></div>' : ''}<ul class="hist">${hist}</ul>` : ''}</div>`);
   $('modalCard').dataset.id = id;
 }
 function sessionBlock(t) {
@@ -1284,7 +1327,7 @@ function menuModal() {
   openModal(`${head('Menu', 'Tabuleiro de Estudos')}
     <div class="body">
       <div class="row"><button data-act="rules">Como jogar</button><button data-act="anchors">5 Âncoras</button><button data-act="journal">Diário do jogo</button></div>
-      <div class="row"><button data-act="discs">Foco e disciplinas</button><button data-act="wardrobe">Traje</button></div>
+      <div class="row"><button data-act="discs">Foco e disciplinas</button><button data-act="wardrobe">Traje</button><button data-act="cadernoAll">Caderno de rodadas</button></div>
       <div class="row"><button data-act="export">Exportar backup</button><button data-act="import">Importar backup</button></div>
       <div class="row">${IS_WEB
         ? (account ? `<button class="ghost" data-act="logout">Sair da conta Microsoft</button>` : '<button data-act="connect">Entrar com a conta Microsoft</button>')
@@ -1416,7 +1459,7 @@ function finishSession() {
   $('reader').classList.remove('on'); readerLesson = null;
   // estudo → Arranco da Gaveta; Espelho Cego → autoavaliação
   if (s.kind === 'study' || s.mode === 'espelho') {
-    Object.assign(s, { stage: s.kind === 'study' ? 'recall' : 'mirror', base, recallStart: Date.now(), draft: '', hookDraft: '' });
+    Object.assign(s, { stage: s.kind === 'study' ? 'recall' : 'mirror', base, recallStart: Date.now(), rAcc: 0, draft: '', hookDraft: '', sheet: sheetPref(), answers: [] });
     save(); renderPill();
     return s.kind === 'study' ? recallModal() : mirrorModal();
   }
@@ -1426,10 +1469,50 @@ function finishSession() {
 // rodadas de tarefas já feitas numa casa (o estudo com resgate é a rodada 1)
 const roundsOf = t => t.history.filter(e => e.recall).length;
 function startDrill(id) {
+  if (DATA.paused?.[id]) return resumeRound(id);
   const t = S.tiles.find(x => x.id === id), round = roundsOf(t) + 1;
   DATA.session = { id, kind: 'review', mode: 'gaveta', src: 'pc', need: 0, acc: 0, runStart: null, stage: 'recall', round,
-    base: { t: 'review', mode: 'gaveta', id, src: 'pc', dev: isMobile() ? 'mobile' : 'pc', round }, recallStart: Date.now(), draft: '', hookDraft: '' };
+    base: { t: 'review', mode: 'gaveta', id, src: 'pc', dev: isMobile() ? 'mobile' : 'pc', round }, recallStart: Date.now(), rAcc: 0, draft: '', hookDraft: '', sheet: sheetPref(), answers: [] };
   save(); renderPill(); recallModal();
+}
+// folha em branco total × por tópicos (preferência deste aparelho)
+const SHEET_KEY = 'tabuleiro10:folha', DEV_MIN = 10;
+const sheetPref = () => { try { return localStorage.getItem(SHEET_KEY) || 'free'; } catch (e) { return 'free'; } };
+const recallEl = s => (s.rAcc || 0) + (s.recallStart ? Date.now() - s.recallStart : 0);
+const ansText = a => (typeof a === 'string' ? a : a?.a || '').trim();
+const topicsDone = x => (x.answers || []).filter(a => ansText(a).length >= DEV_MIN).length;
+const fmtStamp = iso => { const d = new Date(iso); return `${d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; };
+const pausedList = () => Object.values(DATA.paused || {}).filter(p => !S || S.tiles.some(t => t.id === p.id)).sort((a, b) => (b.pausedAt || '').localeCompare(a.pausedAt || ''));
+const roundName = p => p.mode === 'gaveta' ? `Rodada de tarefas ${p.round}` : 'Resgate do estudo';
+// pausa: a rodada sai da sessão (não bloqueia outras aulas) e fica salva no OneDrive com o texto de cada tópico
+function pauseRound() {
+  const s = DATA.session; if (!s || s.stage !== 'recall') return;
+  if ($('rText')) s.draft = $('rText').value;
+  if ($('rHook')) s.hookDraft = $('rHook').value;
+  s.rAcc = recallEl(s); s.recallStart = null; s.pausedAt = new Date().toISOString();
+  DATA.paused = { ...(DATA.paused || {}), [s.id]: s };
+  DATA.session = null; closeModal(); save(); render();
+  toast(`${roundName(s)} pausada: retome quando quiser`);
+}
+function resumeRound(id) {
+  const p = DATA.paused?.[id]; if (!p) return;
+  if (DATA.session) { toast('Termine ou cancele a sessão em andamento antes de retomar', true); return; }
+  delete DATA.paused[id];
+  p.recallStart = Date.now(); delete p.pausedAt;
+  DATA.session = p; save(); renderPill(); recallModal();
+}
+function discardRound(id) {
+  const p = DATA.paused?.[id]; if (!p || p.kind === 'study') return;
+  if (!confirm(`Descartar a ${roundName(p).toLowerCase()} pausada? O texto escrito nela será perdido.`)) return;
+  delete DATA.paused[id]; save(); render(); tileModal(id);
+}
+function pausedCard(p) {
+  const m = p.topicList?.length || 0, n = topicsDone(p), tp = p.sheet === 'topics' && m;
+  return `<div class="paused"><h3>${roundName(p)} · pausada</h3>
+    <p class="note">Pausada em ${fmtStamp(p.pausedAt)} · ${tp ? `por tópicos · <b>${n} de ${m}</b> desenvolvidos` : `folha em branco · ${(p.draft || '').trim().length} caracteres`} · ${fmtDur(Math.round((p.rAcc || 0) / 1000))} de resgate</p>
+    ${tp ? `<div class="prog"><i style="width:${Math.round(n / m * 100)}%"></i></div>` : ''}
+    <div class="row"><button class="gold" data-act="resumeRound">Retomar de onde parei</button>${p.kind === 'study' ? '' : '<button class="danger" data-act="discardRound">Descartar</button>'}</div>
+    <p class="note">Fica salva no OneDrive com o texto de cada tópico: dá para retomar em outro aparelho. ${p.kind === 'study' ? 'O estudo só é registrado depois que você concluir o resgate.' : 'Enquanto estiver pausada, a próxima rodada desta aula não começa.'}</p></div>`;
 }
 // tópicos do fichamento (títulos e conceitos em negrito), lidos do próprio arquivo da aula
 const topicCache = new Map();
@@ -1466,23 +1549,46 @@ async function toggleTopics() {
 function recallModal() {
   const s = DATA.session, t = S.tiles.find(x => x.id === s.id), C = CONFIG;
   const round = s.round || roundsOf(t) + 1;
-  openModal(`${head(`Arranco da Gaveta · ${esc(lessonLabel(t))} · rodada de tarefas ${round}`, 'Feche a aula. Folha em branco.')}
+  if (!s.sheet) s.sheet = sheetPref();
+  const tp = s.sheet === 'topics';
+  openModal(`${head(`Arranco da Gaveta · ${esc(lessonLabel(t))} · ${s.mode === 'gaveta' ? `rodada de tarefas ${round}` : 'resgate do estudo'}`, tp ? 'Feche a aula. Desenvolva cada tópico de memória.' : 'Feche a aula. Folha em branco.')}
     <div class="body">
-      <p>Sem olhar o fichamento, escreva <b>tudo de que se lembra</b>: tópicos, setas, conceitos centrais. Travou? Resista a espiar e insista mais um pouco — o esforço é o que grava.</p>
+      <div class="seg" role="group" aria-label="Tipo de folha"><button data-act="sheet" data-v="free" class="${tp ? '' : 'on'}" aria-pressed="${!tp}">Folha em branco total</button><button data-act="sheet" data-v="topics" class="${tp ? 'on' : ''}" aria-pressed="${tp}">Por tópicos (meio-termo)</button></div>
+      ${tp ? '<p>Cada tópico do fichamento ganhou um campo. O título e os conceitos em cinza são só dica: <b>desenvolva o conteúdo de memória</b>, sem abrir a aula.</p>'
+        : '<p>Sem olhar o fichamento, escreva <b>tudo de que se lembra</b>: tópicos, setas, conceitos centrais. Travou? Resista a espiar e insista mais um pouco — o esforço é o que grava.</p>'}
       <div class="timer" id="rTimer">${clock(C.recallMin * 60)}</div>
-      <div class="row"><button class="ghost" id="rTopicsBtn" data-act="topics">${s.showTopics ? 'Ocultar tópicos' : 'Exibir tópicos do fichamento'}</button></div>
+      ${tp ? `<div class="note" id="rTpCount"></div><div class="prog"><i id="rTpBar" style="width:0"></i></div><div id="rTopics"><p class="note">Lendo os tópicos do fichamento…</p></div>`
+        : `<div class="row"><button class="ghost" id="rTopicsBtn" data-act="topics">${s.showTopics ? 'Ocultar tópicos' : 'Exibir tópicos do fichamento'}</button></div>
       <div class="guide" id="rGuide" style="display:none" aria-label="Tópicos do fichamento (dica)"></div>
-      <textarea id="rText" placeholder="O que eu lembro da aula…">${esc(s.draft || '')}</textarea>
+      <textarea id="rText" placeholder="O que eu lembro da aula…">${esc(s.draft || '')}</textarea>`}
       <div class="counter" id="rCount">0/${C.recallChars}</div>
       <label class="f">Velcro de Conceitos — onde na sua vida ou trabalho você já viu isso acontecer? (opcional, +${C.ptsHook})</label>
       <textarea id="rHook" style="min-height:70px" placeholder="Ex.: isso é igual ao que aconteceu quando…">${esc(s.hookDraft || '')}</textarea>
       <div class="row"><button class="primary" id="rSave" data-act="saveRecall" disabled>${s.mode === 'gaveta' ? `Registrar rodada ${round}` : 'Registrar estudo'}</button>
       <button id="rCheck" data-act="read" disabled>Conferir na aula</button></div>
-      <p class="note">O registro libera após ${C.recallMin} min de resgate e ${C.recallChars} caracteres.</p></div>`);
+      <div class="row"><button class="ghost" data-act="pauseRound">${ic('pause')}Pausar e continuar depois</button></div>
+      <p class="note">O registro libera após ${C.recallMin} min de resgate e ${C.recallChars} caracteres${tp ? ' somando todos os tópicos' : ''}. A pausa guarda o texto no OneDrive: dá para retomar em outro aparelho.</p></div>`);
   $('modalCard').dataset.id = s.id;
-  const keep = () => { s.draft = $('rText').value; s.hookDraft = $('rHook').value; saveLocal(); tick(); };
-  $('rText').addEventListener('input', keep); $('rHook').addEventListener('input', keep);
-  if (s.showTopics) { s.showTopics = false; toggleTopics(); }
+  $('rHook').addEventListener('input', () => { s.hookDraft = $('rHook').value; saveLocal(); });
+  if (tp) fillTopics(s, t);
+  else {
+    $('rText').addEventListener('input', () => { s.draft = $('rText').value; saveLocal(); tick(); });
+    if (s.showTopics) { s.showTopics = false; toggleTopics(); }
+  }
+  tick();
+}
+async function fillTopics(s, t) {
+  let tp = s.topicList;
+  if (!tp) {
+    try { tp = (await lessonTopics(t)).map(x => ({ title: x.title, keys: x.keys })); }
+    catch (e) { if ($('rTopics')) $('rTopics').innerHTML = `<p class="note">Não consegui ler os tópicos: ${esc(e.message)}. Use a folha em branco total.</p>`; return; }
+    if (!tp.length) { if ($('rTopics')) $('rTopics').innerHTML = '<p class="note">Este fichamento não tem tópicos marcados. Use a folha em branco total.</p>'; return; }
+    s.topicList = tp; saveLocal();
+  }
+  const box = $('rTopics'); if (DATA.session !== s || !box) return;
+  s.answers = s.answers || [];
+  box.innerHTML = tp.map((x, i) => `<div class="tp" id="tp${i}"><div class="tp-h"><span>${i + 1}.</span><span>${esc(x.title)}</span><span class="st" id="tps${i}"></span></div>${x.keys.length ? `<div class="tp-k">${x.keys.map(esc).join(' · ')}</div>` : ''}<textarea data-i="${i}" aria-label="O que lembro do tópico ${i + 1}" placeholder="O que eu lembro deste tópico…">${esc(s.answers[i] || '')}</textarea></div>`).join('');
+  box.querySelectorAll('textarea').forEach(a => a.addEventListener('input', () => { s.answers[+a.dataset.i] = a.value; saveLocal(); tick(); }));
   tick();
 }
 function mirrorModal() {
@@ -1494,6 +1600,51 @@ function mirrorModal() {
       <p class="note">Travou? A casa fica em reforço. Volte ao fichamento, corrija a lacuna e refaça o Espelho Cego.</p></div>`);
   $('modalCard').dataset.id = s.id;
 }
+// ---------- caderno de rodadas (histórico das folhas) ----------
+const cad = { id: null, ri: null, cmp: true };
+function cadRounds(t) {
+  const list = t.history.filter(e => e.recall).map((e, i) => ({ ...e, n: i + 1 }));
+  const p = DATA.paused?.[t.id];
+  if (p) list.push({ pz: true, n: p.round || list.length + 1, t: p.kind, mode: p.mode, day: (p.pausedAt || '').slice(0, 10), sheet: p.sheet, recall: p.draft,
+    answers: p.sheet === 'topics' && p.topicList ? p.topicList.map((x, i) => ({ t: x.title, a: (p.answers?.[i] || '').trim() })) : null, recallSec: Math.round((p.rAcc || 0) / 1000), hook: p.hookDraft });
+  return list;
+}
+const roundLabel = r => `Rodada ${r.n} · ${r.pz ? 'pausada' : D.br(r.day)}`;
+const roundKind = r => `${r.answers ? 'por tópicos' : 'folha em branco'}${r.t === 'study' ? ' · estudo' : ''}`;
+const roundScore = r => r.answers ? `${topicsDone(r)} de ${r.answers.length} tópicos` : `${(r.recall || '').trim().length} caracteres`;
+const cell = (txt, l) => `<div${l ? ` data-l="${esc(l)}"` : ''}>${txt ? esc(txt) : '<span class="vz">(não lembrou)</span>'}</div>`;
+const fullText = r => r.answers ? r.answers.map((x, i) => `${i + 1}. ${x.t}\n${x.a || '—'}`).join('\n\n') : (r.recall || '');
+function cadernoModal(id) {
+  if (id !== undefined) { cad.id = id; cad.ri = null; }
+  const list = S.tiles.filter(t => roundsOf(t) || DATA.paused?.[t.id])
+    .map(t => ({ t, last: cadRounds(t).slice(-1)[0] })).sort((a, b) => (b.last.pz ? '9' : b.last.ts || b.last.day).localeCompare(a.last.pz ? '9' : a.last.ts || a.last.day));
+  if (!list.length) return openModal(`${head('Histórico', 'Caderno de rodadas')}<div class="body"><p>Ainda não há rodadas registradas. Cada resgate de memória (no fim do estudo ou nos exercícios Gaveta + Velcro) fica guardado aqui, por aula.</p></div>`);
+  const sel = list.find(x => x.t.id === cad.id) || list[0], t = sel.t, rounds = cadRounds(t);
+  const ri = cad.ri != null && cad.ri < rounds.length ? cad.ri : rounds.length - 1, cur = rounds[ri], prev = rounds[ri - 1];
+  const cmp = cad.cmp && prev;
+  let body = '';
+  if (cmp) {
+    body += `<div class="cmp hd"><div>Tópico</div><div>${roundLabel(prev)} · ${roundKind(prev)}</div><div>${roundLabel(cur)} · ${roundKind(cur)}</div></div>`;
+    if (cur.answers && prev.answers) {
+      const titles = [...new Set([...cur.answers.map(x => x.t), ...prev.answers.map(x => x.t)])];
+      body += titles.map((ti, i) => `<div class="cmp"><div>${i + 1}. ${esc(ti)}</div>${cell(prev.answers.find(x => x.t === ti)?.a, roundLabel(prev))}${cell(cur.answers.find(x => x.t === ti)?.a, roundLabel(cur))}</div>`).join('');
+    } else body += `<div class="cmp"><div>Folha inteira</div>${cell(fullText(prev), roundLabel(prev))}${cell(fullText(cur), roundLabel(cur))}</div>`;
+  } else if (cur.answers) body += cur.answers.map((x, i) => `<div class="cmp one"><div>${i + 1}. ${esc(x.t)}</div>${cell(x.a)}</div>`).join('');
+  else body += `<div class="cmp one"><div>Folha em branco</div>${cell(cur.recall)}</div>`;
+  const evo = rounds.map(r => `${roundLabel(r)}: <b>${roundScore(r)}</b>${r.recallSec ? ` · ${fmtDur(r.recallSec)}` : ''}`).join('<br>');
+  openModal(`${head('Caderno de rodadas', `${esc(lessonLabel(t))} — ${esc(t.title)}`, `${esc(t.discName)} · ${rounds.length} rodada(s)`)}
+    <div class="body"><div class="cad">
+      <div class="ls" role="list">${list.map(({ t: x, last }) => `<button role="listitem" data-act="cadLesson" data-cid="${esc(x.id)}" class="${x === t ? 'on' : ''}"><span class="dot" style="background:${x.color}"></span><span><b>${esc(lessonLabel(x))}</b><small>${last.pz ? `rodada ${last.n} pausada` : `última: ${fmtDay(last.day)} · ${roundKind(last)}`}</small></span><span class="k">${cadRounds(x).filter(r => !r.pz).length}</span></button>`).join('')}</div>
+      <div>
+        <div class="chips">${rounds.map((r, i) => `<button data-act="cadRound" data-ri="${i}" class="${i === ri ? 'on' : ''}">${roundLabel(r)}</button>`).join('')}
+          ${rounds.length > 1 ? `<label><input type="checkbox" data-act="cadCmp" ${cad.cmp ? 'checked' : ''}>Comparar com a rodada anterior</label>` : ''}</div>
+        <p class="note" style="margin-top:0">${roundLabel(cur)} · ${roundKind(cur)} · ${roundScore(cur)}${cur.recallSec ? ` · ${fmtDur(cur.recallSec)} de resgate` : ''}</p>
+        ${cur.pz ? `<div class="row"><button class="gold" data-act="resumeRound">Retomar esta rodada</button></div>` : ''}
+        ${body}
+        <div class="evo">${cur.hook ? `<div class="hk"><b>Velcro da ${roundLabel(cur).split(' · ')[0].toLowerCase()}:</b> ${esc(cur.hook)}</div>` : ''}<div><b>Evolução</b><br>${evo}</div></div>
+      </div></div></div>`, 'wide');
+  $('modalCard').dataset.id = t.id;
+}
 function closeSessionWith(extra) {
   const s = DATA.session; if (!s?.base) return;
   DATA.session = null; closeModal();
@@ -1502,7 +1653,15 @@ function closeSessionWith(extra) {
 function renderPill() {
   const s = DATA.session, pill = $('pill');
   const hide = !s || ($('reader').classList.contains('on') && readerLesson && s.id === readerLesson.id && !s.stage);
-  if (!s) { pill.classList.remove('on'); return; }
+  if (!s) {
+    const pz = S && pausedList()[0], pt = pz && S.tiles.find(x => x.id === pz.id);
+    if (!pt) { pill.classList.remove('on'); return; }
+    pill.classList.add('on');
+    $('pillT').textContent = `${pz.mode === 'gaveta' ? `Rodada ${pz.round}` : 'Resgate'} pausada`;
+    $('pillL').textContent = `${lessonLabel(pt)}${pz.sheet === 'topics' && pz.topicList ? ` · ${topicsDone(pz)}/${pz.topicList.length} tópicos` : ''}`;
+    $('pillPause').style.display = 'none'; $('pillBtn').textContent = 'Retomar';
+    return;
+  }
   const t = S?.tiles.find(x => x.id === s.id);
   if (S && !t) { DATA.session = null; save(); pill.classList.remove('on'); return; }
   pill.classList.toggle('on', !hide);
@@ -1517,12 +1676,18 @@ function tick() {
   const s = DATA.session; if (!s) return;
   if (s.runStart && Date.now() - beatSaved > 5000) { s.beat = Date.now(); beatSaved = Date.now(); saveLocal(); }
   if (s.stage === 'recall') {
-    const rleft = CONFIG.recallMin * 60e3 - (Date.now() - s.recallStart), txt = (s.draft || '').trim().length;
+    const rleft = CONFIG.recallMin * 60e3 - recallEl(s), tp = s.sheet === 'topics';
+    const txt = tp ? (s.answers || []).reduce((n, a) => n + ansText(a).length, 0) : (s.draft || '').trim().length;
     $('pillT').textContent = rleft > 0 ? clock(Math.ceil(rleft / 1000)) : 'pronto'; $('pillBtn').textContent = 'Abrir';
     if ($('rTimer')) {
       $('rTimer').textContent = rleft > 0 ? clock(Math.ceil(rleft / 1000)) : 'pronto'; $('rTimer').classList.toggle('over', rleft <= 0);
       $('rCount').textContent = `${txt}/${CONFIG.recallChars}`; $('rCount').className = 'counter ' + (txt >= CONFIG.recallChars ? 'okc' : '');
-      $('rSave').disabled = rleft > 0 || txt < CONFIG.recallChars; $('rCheck').disabled = rleft > 0;
+      $('rSave').disabled = rleft > 0 || txt < CONFIG.recallChars || (tp && !s.topicList); $('rCheck').disabled = rleft > 0;
+      if (tp && s.topicList && $('rTpCount')) {
+        const m = s.topicList.length, n = topicsDone(s);
+        $('rTpCount').innerHTML = `<b>${n} de ${m}</b> tópicos desenvolvidos`; $('rTpBar').style.width = `${Math.round(n / m * 100)}%`;
+        s.topicList.forEach((_, i) => { const ok = ansText(s.answers?.[i]).length >= DEV_MIN, st = $('tps' + i); if (st) { st.textContent = ok ? 'desenvolvido' : 'em branco'; st.style.color = ok ? 'var(--ok)' : ''; } $('tp' + i)?.classList.toggle('ok', ok); });
+      }
     }
     return;
   }
@@ -1612,12 +1777,25 @@ document.addEventListener('click', e => {
     case 'openSession': { const s = DATA.session; if (!s) break; if (!s.stage && s.src === 'pc' && s.mode !== 'espelho') { closeModal(); openLesson(S.tiles.find(x => x.id === s.id)); } else tileModal(s.id); break; }
     case 'togglePause': togglePause(); tileModal(id); break;
     case 'saveRecall': {
-      const hook = $('rHook').value.trim(), s = DATA.session, rs = Math.round((Date.now() - s.recallStart) / 1000);
-      closeSessionWith({ recall: $('rText').value.trim(), recallSec: rs, ...(s.mode === 'gaveta' ? { sec: rs, min: Math.round(rs / 60) } : {}), ...(s.showTopics ? { topics: true } : {}), ...(hook ? { hook } : {}) });
+      const hook = $('rHook').value.trim(), s = DATA.session, rs = Math.round(recallEl(s) / 1000);
+      const tp = s.sheet === 'topics' && s.topicList?.length;
+      const answers = tp ? s.topicList.map((x, i) => ({ t: x.title, a: ansText(s.answers?.[i]) })) : null;
+      const recall = tp ? answers.map((x, i) => x.a ? `${i + 1}. ${x.t}: ${x.a}` : '').filter(Boolean).join('\n') : $('rText').value.trim();
+      if (DATA.paused) delete DATA.paused[s.id];
+      closeSessionWith({ recall, recallSec: rs, ...(s.mode === 'gaveta' ? { sec: rs, min: Math.round(rs / 60) } : {}), ...(tp ? { sheet: 'topics', answers } : s.showTopics ? { topics: true } : {}), ...(hook ? { hook } : {}) });
       break;
     }
     case 'drill': startDrill(id); break;
     case 'topics': toggleTopics(); break;
+    case 'sheet': { const s = DATA.session; if (!s) break; s.sheet = a.dataset.v; try { localStorage.setItem(SHEET_KEY, s.sheet); } catch (err) { /* sem storage */ } saveLocal(); recallModal(); break; }
+    case 'pauseRound': pauseRound(); break;
+    case 'resumeRound': resumeRound(id); break;
+    case 'discardRound': discardRound(id); break;
+    case 'caderno': cadernoModal(id); break;
+    case 'cadernoAll': cadernoModal(null); break;
+    case 'cadLesson': cad.id = a.dataset.cid; cad.ri = null; cadernoModal(); break;
+    case 'cadRound': cad.ri = +a.dataset.ri; cadernoModal(); break;
+    case 'cadCmp': cad.cmp = a.checked; cadernoModal(); break;
     case 'mirrorOk': closeSessionWith({ mode: 'espelho', mirror: 'ok' }); break;
     case 'mirrorFail': closeSessionWith({ mode: 'espelho', mirror: 'falhou' }); toast('Casa marcada para reforço', true); break;
     case 'anchors': anchorsModal(); break;
@@ -1647,11 +1825,12 @@ $('btnSync').onclick = refreshSources;
 $('btnMenu').onclick = menuModal;
 $('tabHoje').onclick = () => setView('hoje');
 $('tabMapa').onclick = () => setView('mapa');
+$('tabCad').onclick = () => cadernoModal(null);
 $('readerX').onclick = closeReader;
 $('rPause').onclick = togglePause;
 $('rDone').onclick = finishSession;
 $('pillPause').onclick = togglePause;
-$('pillBtn').onclick = () => { const s = DATA.session; if (!s) return; if (!s.stage && s.src === 'pc' && s.mode !== 'espelho') openLesson(S.tiles.find(x => x.id === s.id)); else tileModal(s.id); };
+$('pillBtn').onclick = () => { const s = DATA.session; if (!s) { const pz = pausedList()[0]; if (pz) resumeRound(pz.id); return; } if (!s.stage && s.src === 'pc' && s.mode !== 'espelho') openLesson(S.tiles.find(x => x.id === s.id)); else tileModal(s.id); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('reader').classList.contains('on')) closeReader(); else closeModal(); } });
 
 // ---------- tema (preferência deste aparelho) ----------
