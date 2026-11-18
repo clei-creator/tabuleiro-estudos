@@ -215,6 +215,10 @@ label.f{font-weight:600;font-size:13.5px;display:block;margin:12px 0 4px}
 .journal .it.gain{border-color:var(--ok)}
 .journal .it.shield{border-color:var(--mist)}
 .journal .it.info{border-color:var(--ink-faint);color:var(--ink-soft)}
+.guide{border:1px dashed var(--line);background:var(--surface-2);border-radius:10px;padding:10px 12px;margin-bottom:8px;max-height:240px;overflow:auto;color:#8A8270;user-select:none;font-size:13.5px;line-height:1.45}
+.guide .g-t{font-weight:600;margin-top:6px} .guide .g-t:first-child{margin-top:0}
+.guide .g-k{font-size:12.5px;padding-left:16px}
+html[data-theme="dark"] .guide{color:#8791A6}
 .anchor{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;margin:8px 0}
 .anchor h4{margin:0 0 4px;font-family:var(--serif);font-size:20px}
 .anchor p{margin:4px 0;font-size:13.5px}
@@ -429,7 +433,8 @@ function replay(data, lessons, today) {
       } else if (e.t === 'review') {
         if (t.status !== 'done') continue;
         t.history.push(e); s.srcCount[e.src] = (s.srcCount[e.src] || 0) + 1;
-        const age = D.diff(t.lastTouch, d), mirror = e.mode === 'espelho';
+        const age = D.diff(t.lastTouch, d), mirror = e.mode === 'espelho', drill = e.mode === 'gaveta';
+        if (drill && (e.hook || '').trim().length >= C.hookChars && !t.hook) { t.hook = true; s.points += C.ptsHook; note(d, 'gain', `Velcro: ${lab} amarrada à vida real · +${C.ptsHook} honorários`); }
         if (!t.reviews.some(r => r.day === d)) {
           if (age < C.nevoaMin) note(d, 'info', `Revisão de ${lab} no mesmo dia: registrada, sem pontos — deixe a matéria entrar na névoa (${C.nevoaMin} a ${C.nevoaMax} dias)`);
           else if (mirror && e.mirror === 'falhou') { t.flag = true; note(d, 'info', `Espelho Cego em ${lab}: travou ou usou jargão — casa marcada para reforço`); }
@@ -440,7 +445,7 @@ function replay(data, lessons, today) {
             s.dayReviews[d] = (s.dayReviews[d] || 0) + 1;
             if (mirror) t.flag = false;
             if (L) dayDiscs.add(L.discN);
-            note(d, 'gain', `${mirror ? 'Espelho limpo' : 'Revisão'} de ${lab}${e.src === 'kindle' ? ' no Kindle' : ''}${nevoa ? ' · resgate na névoa' : faded ? ' (resgatou do desbotamento)' : ''} · +${p} honorários +${C.xpReview} XP`);
+            note(d, 'gain', `${mirror ? 'Espelho limpo' : drill ? `Rodada de tarefas ${e.round || ''} (Gaveta)` : 'Revisão'} de ${lab}${e.src === 'kindle' ? ' no Kindle' : ''}${nevoa ? ' · resgate na névoa' : faded ? ' (resgatou do desbotamento)' : ''} · +${p} honorários +${C.xpReview} XP`);
           }
         }
         t.reviews.push(e); t.lastTouch = d;
@@ -1127,15 +1132,21 @@ function tileModal(id) {
     const revToday = t.reviews.some(r => r.day === today());
     const value = revToday ? 'já revisada hoje' : t.age < C.nevoaMin ? 'hoje não pontua · espere a névoa'
       : t.nevoa ? `na névoa: +${C.ptsNevoa}` : t.age >= C.fadeStart ? `desbotando: +${C.ptsReviewFaded}` : `+${C.ptsReview}`;
-    actions = `<h3>Revisar · ${value}</h3>
-      <div class="row"><button class="primary" data-act="start" data-kind="review" data-src="pc">Revisar nesta tela · ${C.reviewMin} min</button><button class="gold" data-act="start" data-kind="review" data-src="pc" data-mode="espelho">Espelho Cego · ${C.mirrorMin} min · +${C.ptsMirror}</button></div>
-      <div class="row"><button data-act="start" data-kind="review" data-src="kindle">${ic('book')}Revisão Kindle ao vivo</button><button class="ghost" data-act="later" data-kind="review">Já revisei no Kindle</button></div>
+    const round = roundsOf(t) + 1;
+    actions = `<h3>Exercícios da aula · rodada de tarefas ${round}</h3>
+      <div class="row"><button class="gold" data-act="drill">${ic('book')}Gaveta + Velcro: papel em branco · ${C.recallMin} min</button></div>
+      <p class="note">Escreva de memória tudo o que lembra da aula (com os tópicos do fichamento como dica, se quiser) e amarre a um caso da vida real. Conta como revisão · ${value}.</p>
+      <h3>Revisões</h3>
+      <div class="row"><button class="primary" data-act="start" data-kind="review" data-src="pc">Reler o fichamento · ${C.reviewMin} min</button><button data-act="start" data-kind="review" data-src="pc" data-mode="espelho">Espelho Cego · ${C.mirrorMin} min · +${C.ptsMirror}</button></div>
+      <div class="row"><button data-act="start" data-kind="review" data-src="kindle">Revisão Kindle ao vivo</button><button class="ghost" data-act="later" data-kind="review">Já revisei no Kindle</button></div>
       <p class="note">Espelho Cego: sem olhar nada, explique a aula em voz alta, como para alguém de 12 anos, sem jargão.${t.flag ? ' <b>Esta casa está em reforço.</b>' : ''}${revToday ? ' Você já revisou esta casa hoje: novas revisões ficam no histórico, mas não pontuam.' : t.age < C.nevoaMin ? ` Revisar no mesmo dia não consolida: o resgate rende mais entre ${C.nevoaMin} e ${C.nevoaMax} dias depois.` : ''}</p>`;
   } else actions = `<p class="note">Esta casa ainda está à frente. Vença a casa atual${focusDisc() ? '' : ', use o foco do dia nesta disciplina'} ou pule a atual para chegar aqui. Pode ler o conteúdo, mas não conta.</p>`;
-  const hist = t.history.slice().reverse().map(e => `<li><b>${e.t === 'study' ? 'Estudo' : e.t === 'review' ? (e.mode === 'espelho' ? `Espelho Cego ${e.mirror === 'falhou' ? '(travou)' : '(limpo)'}` : 'Revisão') : 'Pulo'}</b> · ${fmtDay(e.day)}${e.src ? ` · ${e.src === 'kindle' ? 'Kindle' : e.dev === 'mobile' ? 'celular/tablet' : 'PC'}` : ''}${e.sec ? ` · ${fmtDur(e.sec)}` : e.min ? ` · ${e.min} min` : ''}${e.note ? `<span class="n">“${esc(e.note)}”</span>` : ''}${e.recall ? `<span class="n">Resgate: “${esc(e.recall)}”</span>` : ''}${e.hook ? `<span class="n">Gancho: “${esc(e.hook)}”</span>` : ''}</li>`).join('');
+  let rn = 0;
+  const roundNo = new Map(t.history.filter(e => e.recall).map(e => [e, ++rn]));
+  const hist = t.history.slice().reverse().map(e => `<li><b>${e.t === 'study' ? 'Estudo' : e.t === 'review' ? (e.mode === 'espelho' ? `Espelho Cego ${e.mirror === 'falhou' ? '(travou)' : '(limpo)'}` : e.mode === 'gaveta' ? 'Exercícios' : 'Revisão') : 'Pulo'}${roundNo.has(e) ? ` · rodada de tarefas ${roundNo.get(e)}` : ''}</b> · ${fmtDay(e.day)}${e.src ? ` · ${e.src === 'kindle' ? 'Kindle' : e.dev === 'mobile' ? 'celular/tablet' : 'PC'}` : ''}${e.sec ? ` · ${fmtDur(e.sec)}` : e.min ? ` · ${e.min} min` : ''}${e.note ? `<span class="n">“${esc(e.note)}”</span>` : ''}${e.recall ? `<span class="n">Resgate: “${esc(e.recall)}”</span>` : ''}${e.hook ? `<span class="n">Gancho: “${esc(e.hook)}”</span>` : ''}</li>`).join('');
   openModal(`${head(`${esc(t.discName)} · ${esc(t.prof)}`, `${esc(lessonLabel(t))} — ${esc(t.title)}`, `Aula de ${fmtDay(t.date)} · ${stateText(t)}`)}
     <div class="body">${actions}
-      <div class="row"><button class="ghost" data-act="read">${ic('book')}Abrir fichamento</button></div>
+      ${t.status === 'done' ? '' : `<div class="row"><button class="ghost" data-act="read">${ic('book')}Só ler o fichamento (não conta tempo)</button></div>`}
       ${hist ? `<h3>Histórico da casa</h3><ul class="hist">${hist}</ul>` : ''}</div>`);
   $('modalCard').dataset.id = id;
 }
@@ -1412,22 +1423,66 @@ function finishSession() {
   DATA.session = null; closeModal();
   addEvent(base);
 }
+// rodadas de tarefas já feitas numa casa (o estudo com resgate é a rodada 1)
+const roundsOf = t => t.history.filter(e => e.recall).length;
+function startDrill(id) {
+  const t = S.tiles.find(x => x.id === id), round = roundsOf(t) + 1;
+  DATA.session = { id, kind: 'review', mode: 'gaveta', src: 'pc', need: 0, acc: 0, runStart: null, stage: 'recall', round,
+    base: { t: 'review', mode: 'gaveta', id, src: 'pc', dev: isMobile() ? 'mobile' : 'pc', round }, recallStart: Date.now(), draft: '', hookDraft: '' };
+  save(); renderPill(); recallModal();
+}
+// tópicos do fichamento (títulos e conceitos em negrito), lidos do próprio arquivo da aula
+const topicCache = new Map();
+async function lessonTopics(t) {
+  if (topicCache.has(t.id)) return topicCache.get(t.id);
+  const html = await lessonHTML(t);
+  if (html == null) throw new Error('conecte a pasta 10º ou entre com a conta Microsoft');
+  const doc = new DOMParser().parseFromString(html, 'text/html'), out = [];
+  for (const el of doc.querySelectorAll('.topic-title, .topic-body')) {
+    if (el.classList.contains('topic-title')) {
+      const c = el.cloneNode(true); c.querySelectorAll('.topic-badge').forEach(b => b.remove());
+      out.push({ title: c.textContent.replace(/\s+/g, ' ').trim(), keys: [] });
+    } else if (out.length) {
+      const cur = out[out.length - 1];
+      for (const b of el.querySelectorAll('strong, b')) { const k = b.textContent.replace(/\s+/g, ' ').trim().replace(/[.:;,]$/, ''); if (k.length > 4 && k.length < 60 && !cur.keys.includes(k) && cur.keys.length < 5) cur.keys.push(k); }
+    }
+  }
+  topicCache.set(t.id, out);
+  return out;
+}
+async function toggleTopics() {
+  const s = DATA.session, box = $('rGuide'); if (!s || !box) return;
+  s.showTopics = !s.showTopics; saveLocal();
+  $('rTopicsBtn').textContent = s.showTopics ? 'Ocultar tópicos' : 'Exibir tópicos do fichamento';
+  box.style.display = s.showTopics ? '' : 'none';
+  if (!s.showTopics || box.dataset.loaded) return;
+  box.innerHTML = '<span class="note">Lendo os tópicos do fichamento…</span>';
+  try {
+    const tp = await lessonTopics(S.tiles.find(x => x.id === s.id));
+    box.innerHTML = tp.length ? tp.map((x, i) => `<div class="g-t">${i + 1}. ${esc(x.title)}</div>${x.keys.length ? `<div class="g-k">${x.keys.map(esc).join(' · ')}</div>` : ''}`).join('') : '<span class="note">Este fichamento não tem tópicos marcados.</span>';
+    box.dataset.loaded = '1';
+  } catch (e) { box.innerHTML = `<span class="note">Não consegui ler os tópicos: ${esc(e.message)}</span>`; }
+}
 function recallModal() {
   const s = DATA.session, t = S.tiles.find(x => x.id === s.id), C = CONFIG;
-  openModal(`${head(`Arranco da Gaveta · ${esc(lessonLabel(t))}`, 'Feche a aula. Folha em branco.')}
+  const round = s.round || roundsOf(t) + 1;
+  openModal(`${head(`Arranco da Gaveta · ${esc(lessonLabel(t))} · rodada de tarefas ${round}`, 'Feche a aula. Folha em branco.')}
     <div class="body">
       <p>Sem olhar o fichamento, escreva <b>tudo de que se lembra</b>: tópicos, setas, conceitos centrais. Travou? Resista a espiar e insista mais um pouco — o esforço é o que grava.</p>
       <div class="timer" id="rTimer">${clock(C.recallMin * 60)}</div>
+      <div class="row"><button class="ghost" id="rTopicsBtn" data-act="topics">${s.showTopics ? 'Ocultar tópicos' : 'Exibir tópicos do fichamento'}</button></div>
+      <div class="guide" id="rGuide" style="display:none" aria-label="Tópicos do fichamento (dica)"></div>
       <textarea id="rText" placeholder="O que eu lembro da aula…">${esc(s.draft || '')}</textarea>
       <div class="counter" id="rCount">0/${C.recallChars}</div>
       <label class="f">Velcro de Conceitos — onde na sua vida ou trabalho você já viu isso acontecer? (opcional, +${C.ptsHook})</label>
       <textarea id="rHook" style="min-height:70px" placeholder="Ex.: isso é igual ao que aconteceu quando…">${esc(s.hookDraft || '')}</textarea>
-      <div class="row"><button class="primary" id="rSave" data-act="saveRecall" disabled>Registrar estudo</button>
+      <div class="row"><button class="primary" id="rSave" data-act="saveRecall" disabled>${s.mode === 'gaveta' ? `Registrar rodada ${round}` : 'Registrar estudo'}</button>
       <button id="rCheck" data-act="read" disabled>Conferir na aula</button></div>
       <p class="note">O registro libera após ${C.recallMin} min de resgate e ${C.recallChars} caracteres.</p></div>`);
   $('modalCard').dataset.id = s.id;
   const keep = () => { s.draft = $('rText').value; s.hookDraft = $('rHook').value; saveLocal(); tick(); };
   $('rText').addEventListener('input', keep); $('rHook').addEventListener('input', keep);
+  if (s.showTopics) { s.showTopics = false; toggleTopics(); }
   tick();
 }
 function mirrorModal() {
@@ -1451,7 +1506,7 @@ function renderPill() {
   const t = S?.tiles.find(x => x.id === s.id);
   if (S && !t) { DATA.session = null; save(); pill.classList.remove('on'); return; }
   pill.classList.toggle('on', !hide);
-  $('pillL').textContent = s.stage === 'recall' ? `Resgate de ${lessonLabel(t)}` : s.stage === 'mirror' ? `Avalie o Espelho de ${lessonLabel(t)}`
+  $('pillL').textContent = s.stage === 'recall' ? `${s.mode === 'gaveta' ? `Rodada ${s.round}` : 'Resgate'} de ${lessonLabel(t)}` : s.stage === 'mirror' ? `Avalie o Espelho de ${lessonLabel(t)}`
     : `${s.mode === 'espelho' ? 'Espelho Cego' : s.kind === 'study' ? 'Estudando' : 'Revisando'} ${lessonLabel(t)}${s.src === 'kindle' ? ' no Kindle' : ''}${s.runStart ? '' : ' · pausado'}`;
   $('pillPause').style.display = s.stage ? 'none' : '';
   $('pillPause').innerHTML = ic(s.runStart ? 'pause' : 'play');
@@ -1557,10 +1612,12 @@ document.addEventListener('click', e => {
     case 'openSession': { const s = DATA.session; if (!s) break; if (!s.stage && s.src === 'pc' && s.mode !== 'espelho') { closeModal(); openLesson(S.tiles.find(x => x.id === s.id)); } else tileModal(s.id); break; }
     case 'togglePause': togglePause(); tileModal(id); break;
     case 'saveRecall': {
-      const hook = $('rHook').value.trim();
-      closeSessionWith({ recall: $('rText').value.trim(), recallSec: Math.round((Date.now() - DATA.session.recallStart) / 1000), ...(hook ? { hook } : {}) });
+      const hook = $('rHook').value.trim(), s = DATA.session, rs = Math.round((Date.now() - s.recallStart) / 1000);
+      closeSessionWith({ recall: $('rText').value.trim(), recallSec: rs, ...(s.mode === 'gaveta' ? { sec: rs, min: Math.round(rs / 60) } : {}), ...(s.showTopics ? { topics: true } : {}), ...(hook ? { hook } : {}) });
       break;
     }
+    case 'drill': startDrill(id); break;
+    case 'topics': toggleTopics(); break;
     case 'mirrorOk': closeSessionWith({ mode: 'espelho', mirror: 'ok' }); break;
     case 'mirrorFail': closeSessionWith({ mode: 'espelho', mirror: 'falhou' }); toast('Casa marcada para reforço', true); break;
     case 'anchors': anchorsModal(); break;
